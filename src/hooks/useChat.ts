@@ -3,6 +3,7 @@ import { Message, WebhookConfig } from '@/types/chat';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
+const SESSION_ID_STORAGE_KEY = 'voltchat-session-id';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -12,6 +13,14 @@ export function useChat() {
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
     url: '',
     isConnected: false,
+  });
+  const [sessionId, setSessionId] = useState<string>(() => {
+    let savedSessionId = sessionStorage.getItem(SESSION_ID_STORAGE_KEY);
+    if (!savedSessionId) {
+      savedSessionId = generateId();
+      sessionStorage.setItem(SESSION_ID_STORAGE_KEY, savedSessionId);
+    }
+    return savedSessionId;
   });
 
   // Load from localStorage on mount
@@ -134,6 +143,7 @@ export function useChat() {
           body: JSON.stringify({
             message: content.trim(),
             timestamp: new Date().toISOString(),
+            sessionId,
           }),
         });
 
@@ -165,12 +175,15 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [webhookConfig.url, isLoading, simulateStreaming]
+    [webhookConfig.url, isLoading, simulateStreaming, sessionId]
   );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
     localStorage.removeItem(MESSAGES_STORAGE_KEY);
+    const newSessionId = generateId();
+    sessionStorage.setItem(SESSION_ID_STORAGE_KEY, newSessionId);
+    setSessionId(newSessionId);
   }, []);
 
   const retryLastMessage = useCallback(() => {
@@ -200,6 +213,7 @@ function getDemoResponse(input: string): string {
     "I'm VoltChat running in demo mode. Configure a webhook URL to connect to your AI backend.",
     "This is a simulated response. Your message was received instantly — that's the VoltChat difference.",
     "Demo mode active. Set up your webhook endpoint to see real AI responses with the same electric speed.",
+    "How far connect your webhook now.. wetin dey worry you sef😂",
     "No webhook configured. I'm showing you how fast responses feel in VoltChat. Ready to connect your backend?",
   ];
 
