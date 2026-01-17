@@ -153,7 +153,11 @@ export function useChat() {
 
         const data = await response.json();
         const responseContent =
-          data.response || data.message || data.content || JSON.stringify(data);
+          (typeof data.output === 'object' ? data.output?.response : data.output) ||
+          data.response ||
+          data.message ||
+          data.content ||
+          JSON.stringify(data);
 
         simulateStreaming(assistantMessageId, responseContent);
       } catch (error) {
