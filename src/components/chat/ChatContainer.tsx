@@ -62,6 +62,7 @@ export function ChatContainer() {
           onSend={sendMessage}
           isLoading={isLoading}
           isConnected={webhookConfig.isConnected}
+          messages={messages}
         />
 
         <WebhookSettings

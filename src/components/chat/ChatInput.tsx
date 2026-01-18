@@ -2,16 +2,20 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Message } from '@/types/chat';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   isConnected: boolean;
+  messages: Message[];
 }
 
-export function ChatInput({ onSend, isLoading, isConnected }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInputProps) {
   const [input, setInput] = useState('');
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const userMessages = messages.filter((m) => m.role === 'user').reverse();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -31,7 +35,7 @@ export function ChatInput({ onSend, isLoading, isConnected }: ChatInputProps) {
     if (input.trim() && !isLoading) {
       onSend(input);
       setInput('');
-      // Reset height
+      setHistoryIndex(-1);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -42,7 +46,44 @@ export function ChatInput({ onSend, isLoading, isConnected }: ChatInputProps) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    } else if (e.key === 'ArrowUp') {
+      if (userMessages.length > 0 && historyIndex < userMessages.length - 1) {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        setInput(userMessages[newIndex].content);
+        e.preventDefault();
+        moveCursorToEnd();
+      }
+    } else if (e.key === 'ArrowDown') {
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(userMessages[newIndex].content);
+        e.preventDefault();
+        moveCursorToEnd();
+      } else if (historyIndex === 0) {
+        setHistoryIndex(-1);
+        setInput('');
+        e.preventDefault();
+      }
     }
+  };
+
+  useEffect(() => {
+    if (input === '') {
+      setHistoryIndex(-1);
+    }
+  }, [input]);
+  
+  const moveCursorToEnd = () => {
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(
+          textareaRef.current.value.length,
+          textareaRef.current.value.length
+        );
+      }
+    }, 0);
   };
 
   return (
@@ -88,12 +129,17 @@ export function ChatInput({ onSend, isLoading, isConnected }: ChatInputProps) {
         </div>
 
         {/* Keyboard hint */}
-        <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground/50 font-mono">
-          <span>Enter</span>
-          <span>to send</span>
-          <span className="mx-1">•</span>
-          <span>Shift+Enter</span>
-          <span>for newline</span>
+        <div className="mt-2 flex items-center justify-between gap-1 text-[10px] text-muted-foreground/50 font-mono">
+          <div>
+            <span className="font-bold">↑↓</span> to browse history
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold">Enter</span>
+            <span>to send</span>
+            <span className="mx-1">•</span>
+            <span className="font-bold">Shift+Enter</span>
+            <span>for newline</span>
+          </div>
         </div>
       </div>
     </div>
