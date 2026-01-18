@@ -145,6 +145,27 @@
 }
 
 /* Keyframes */
+@keyframes loading-dots {
+  0%, 20% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.loading-dot {
+  animation: loading-dots 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
 @keyframes volt-pulse {
   0%, 100% {
     opacity: 1;

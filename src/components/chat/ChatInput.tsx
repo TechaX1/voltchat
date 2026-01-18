@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { Send } from 'lucide-react';
+import { Send, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Message } from '@/types/chat';
@@ -9,9 +9,18 @@ interface ChatInputProps {
   isLoading: boolean;
   isConnected: boolean;
   messages: Message[];
+  isStreamingEnabled: boolean;
+  onStopStreaming: () => void;
 }
 
-export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  isLoading,
+  isConnected,
+  messages,
+  isStreamingEnabled,
+  onStopStreaming,
+}: ChatInputProps) {
   const [input, setInput] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -102,7 +111,7 @@ export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInpu
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={isConnected ? 'Send a message...' : 'Demo mode — configure webhook to connect'}
-            disabled={isLoading}
+            disabled={isLoading && !isStreamingEnabled}
             rows={1}
             className={cn(
               'flex-1 resize-none bg-transparent px-2 py-2 text-sm',
@@ -111,21 +120,33 @@ export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInpu
               'max-h-[200px] min-h-[40px]'
             )}
           />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            className={cn(
-              'h-9 w-9 shrink-0 rounded-md transition-all duration-150',
-              'bg-primary text-primary-foreground',
-              'hover:bg-primary/90 hover:volt-glow',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
-              input.trim() && !isLoading && 'volt-pulse'
-            )}
-          >
-            <Send className="h-4 w-4" />
-            <span className="sr-only">Send message</span>
-          </Button>
+          {isLoading && isStreamingEnabled ? (
+            <Button
+              onClick={onStopStreaming}
+              size="icon"
+              variant="destructive"
+              className="h-9 w-9 shrink-0 rounded-md"
+            >
+              <StopCircle className="h-4 w-4" />
+              <span className="sr-only">Stop generating</span>
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className={cn(
+                'h-9 w-9 shrink-0 rounded-md transition-all duration-150',
+                'bg-primary text-primary-foreground',
+                'hover:bg-primary/90 hover:volt-glow',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+                input.trim() && !isLoading && 'volt-pulse'
+              )}
+            >
+              <Send className="h-4 w-4" />
+              <span className="sr-only">Send message</span>
+            </Button>
+          )}
         </div>
 
         {/* Keyboard hint */}

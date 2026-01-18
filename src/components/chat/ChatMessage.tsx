@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/tooltip";
 import ReactMarkdown from 'react-markdown';
 import { useState } from 'react';
+import { LoadingDots } from './LoadingDots';
 
 interface ChatMessageProps {
   message: Message;
@@ -57,8 +58,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
           isUser
             ? 'bg-primary text-primary-foreground volt-glow'
             : 'bg-transparent border-transparent',
-          isError && 'border-destructive/50 bg-destructive/10',
-          isStreaming && 'volt-shimmer'
+          isError && 'border-destructive/50 bg-destructive/10'
         )}
       >
         {/* Message content */}
@@ -74,10 +74,14 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
           <div
             className={cn(
               'prose dark:prose-invert prose-sm max-w-none',
-              isStreaming && message.content && 'cursor-blink'
+              isStreaming && message.content && 'cursor-blink inline-block'
             )}
           >
-            <ReactMarkdown>{message.content || (isStreaming ? '...' : '')}</ReactMarkdown>
+            {message.content ? (
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            ) : isStreaming ? (
+              <LoadingDots />
+            ) : null}
           </div>
         )}
 

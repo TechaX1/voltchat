@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message, WebhookConfig } from '@/types/chat';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
@@ -24,6 +24,7 @@ export function useChat() {
     }
     return savedSessionId;
   });
+  const streamCleanupRef = useRef<(() => void) | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -90,6 +91,15 @@ export function useChat() {
     const toggleStreaming = useCallback(() => {
       setIsStreamingEnabled((prev) => !prev);
     }, []);
+
+    const stopStreaming = useCallback(() => {
+      if (streamCleanupRef.current) {
+        streamCleanupRef.current();
+        streamCleanupRef.current = null;
+      }
+      setMessages(prev => prev.map(m => m.status === 'streaming' ? { ...m, status: 'complete' } : m));
+      setIsLoading(false);
+    }, []);
   
     const simulateStreaming = useCallback(
       (messageId: string, fullContent: string) => {
@@ -109,6 +119,8 @@ export function useChat() {
               )
             );
             clearInterval(streamInterval);
+            setIsLoading(false);
+            streamCleanupRef.current = null;
           } else {
             setMessages((prev) =>
               prev.map((m) =>
@@ -120,7 +132,7 @@ export function useChat() {
           }
         }, baseDelay + Math.random() * 15);
   
-        return () => clearInterval(streamInterval);
+        streamCleanupRef.current = () => clearInterval(streamInterval);
       },
       []
     );
@@ -129,6 +141,7 @@ export function useChat() {
       async (content: string) => {
         if (!content.trim() || isLoading) return;
   
+        setIsLoading(true);
         const userMessage: Message = {
           id: generateId(),
           role: 'user',
@@ -138,7 +151,6 @@ export function useChat() {
         };
   
         setMessages((prev) => [...prev, userMessage]);
-        setIsLoading(true);
   
         const assistantMessageId = generateId();
         const placeholderMessage: Message = {
@@ -166,8 +178,8 @@ export function useChat() {
                       : m
                   )
                 );
+                setIsLoading(false);
               }
-              setIsLoading(false);
             }, 300);
             return;
           }
@@ -206,6 +218,7 @@ export function useChat() {
                   : m
               )
             );
+            setIsLoading(false);
           }
         } catch (error) {
           const errorMessage =
@@ -222,7 +235,6 @@ export function useChat() {
                 : m
             )
           );
-        } finally {
           setIsLoading(false);
         }
       },
@@ -234,7 +246,6 @@ export function useChat() {
         .reverse()
         .find((m) => m.role === 'user');
       if (lastUserMessage) {
-        // Remove the error message
         setMessages((prev) => prev.slice(0, -1));
         sendMessage(lastUserMessage.content);
       }
@@ -250,6 +261,7 @@ export function useChat() {
       toggleStreaming,
       clearMessages,
       retryLastMessage,
+      stopStreaming,
     };
   }
 function getDemoResponse(input: string): string {

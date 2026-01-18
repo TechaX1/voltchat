@@ -18,14 +18,22 @@ export function ChatContainer() {
     toggleStreaming,
     clearMessages,
     retryLastMessage,
+    stopStreaming,
   } = useChat();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages, but only if user is near the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+    if (container) {
+      const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 200;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }, [messages]);
 
   return (
@@ -41,7 +49,7 @@ export function ChatContainer() {
         />
 
         {/* Messages area */}
-        <main className="flex-1 overflow-y-auto">
+        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <EmptyState onOpenSettings={() => setIsSettingsOpen(true)} />
           ) : (
@@ -67,6 +75,8 @@ export function ChatContainer() {
           isLoading={isLoading}
           isConnected={webhookConfig.isConnected}
           messages={messages}
+          isStreamingEnabled={isStreamingEnabled}
+          onStopStreaming={stopStreaming}
         />
 
         <WebhookSettings
