@@ -6,12 +6,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ChatHeaderProps {
   isConnected: boolean;
   onOpenSettings: () => void;
   onClearChat: () => void;
   messagesCount: number;
+  isStreamingEnabled: boolean;
+  onToggleStreaming: () => void;
 }
 
 export function ChatHeader({
@@ -19,6 +23,8 @@ export function ChatHeader({
   onOpenSettings,
   onClearChat,
   messagesCount,
+  isStreamingEnabled,
+  onToggleStreaming,
 }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4">
@@ -46,7 +52,18 @@ export function ChatHeader({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="streaming-toggle"
+            checked={isStreamingEnabled}
+            onCheckedChange={onToggleStreaming}
+          />
+          <Label htmlFor="streaming-toggle" className="text-xs text-muted-foreground font-mono">
+            Stream
+          </Label>
+        </div>
+
         {messagesCount > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>

@@ -4,6 +4,7 @@ import { Message, WebhookConfig } from '@/types/chat';
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
 const SESSION_ID_STORAGE_KEY = 'voltchat-session-id';
+const STREAMING_ENABLED_KEY = 'voltchat-streaming-enabled';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -14,6 +15,7 @@ export function useChat() {
     url: '',
     isConnected: false,
   });
+  const [isStreamingEnabled, setIsStreamingEnabled] = useState(true);
   const [sessionId, setSessionId] = useState<string>(() => {
     let savedSessionId = sessionStorage.getItem(SESSION_ID_STORAGE_KEY);
     if (!savedSessionId) {
@@ -27,6 +29,7 @@ export function useChat() {
   useEffect(() => {
     const savedUrl = localStorage.getItem(WEBHOOK_STORAGE_KEY);
     const savedMessages = localStorage.getItem(MESSAGES_STORAGE_KEY);
+    const savedStreaming = localStorage.getItem(STREAMING_ENABLED_KEY);
 
     if (savedUrl) {
       setWebhookConfig({ url: savedUrl, isConnected: true });
@@ -46,6 +49,10 @@ export function useChat() {
         console.error('Failed to parse saved messages:', e);
       }
     }
+
+    if (savedStreaming !== null) {
+      setIsStreamingEnabled(JSON.parse(savedStreaming));
+    }
   }, []);
 
   // Persist messages to localStorage
@@ -55,163 +62,196 @@ export function useChat() {
     }
   }, [messages]);
 
-  const updateWebhookUrl = useCallback((url: string) => {
-    const trimmedUrl = url.trim();
-    localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
-    setWebhookConfig({
-      url: trimmedUrl,
-      isConnected: trimmedUrl.length > 0,
-    });
-  }, []);
+  // Persist streaming setting to localStorage
+  useEffect(() => {
+    localStorage.setItem(STREAMING_ENABLED_KEY, JSON.stringify(isStreamingEnabled));
+  }, [isStreamingEnabled]);
 
-  const simulateStreaming = useCallback(
-    (messageId: string, fullContent: string) => {
-      let currentIndex = 0;
-      const chunkSize = 2 + Math.floor(Math.random() * 3); // 2-4 chars at a time
-      const baseDelay = 20; // ms between chunks
 
-      const streamInterval = setInterval(() => {
-        currentIndex += chunkSize;
 
-        if (currentIndex >= fullContent.length) {
+    const clearMessages = useCallback(() => {
+      setMessages([]);
+      localStorage.removeItem(MESSAGES_STORAGE_KEY);
+      const newSessionId = generateId();
+      sessionStorage.setItem(SESSION_ID_STORAGE_KEY, newSessionId);
+      setSessionId(newSessionId);
+    }, []);
+  
+    const updateWebhookUrl = useCallback((url: string) => {
+      const trimmedUrl = url.trim();
+      localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
+      setWebhookConfig({
+        url: trimmedUrl,
+        isConnected: trimmedUrl.length > 0,
+      });
+      clearMessages();
+    }, [clearMessages]);
+  
+    const toggleStreaming = useCallback(() => {
+      setIsStreamingEnabled((prev) => !prev);
+    }, []);
+  
+    const simulateStreaming = useCallback(
+      (messageId: string, fullContent: string) => {
+        let currentIndex = 0;
+        const chunkSize = 2 + Math.floor(Math.random() * 3); // 2-4 chars at a time
+        const baseDelay = 20; // ms between chunks
+  
+        const streamInterval = setInterval(() => {
+          currentIndex += chunkSize;
+  
+          if (currentIndex >= fullContent.length) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === messageId
+                  ? { ...m, content: fullContent, status: 'complete' }
+                  : m
+              )
+            );
+            clearInterval(streamInterval);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === messageId
+                  ? { ...m, content: fullContent.slice(0, currentIndex) }
+                  : m
+              )
+            );
+          }
+        }, baseDelay + Math.random() * 15);
+  
+        return () => clearInterval(streamInterval);
+      },
+      []
+    );
+  
+    const sendMessage = useCallback(
+      async (content: string) => {
+        if (!content.trim() || isLoading) return;
+  
+        const userMessage: Message = {
+          id: generateId(),
+          role: 'user',
+          content: content.trim(),
+          timestamp: new Date(),
+          status: 'complete',
+        };
+  
+        setMessages((prev) => [...prev, userMessage]);
+        setIsLoading(true);
+  
+        const assistantMessageId = generateId();
+        const placeholderMessage: Message = {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+          status: isStreamingEnabled ? 'streaming' : 'complete',
+        };
+  
+        setMessages((prev) => [...prev, placeholderMessage]);
+  
+        try {
+          if (!webhookConfig.url) {
+            // Demo mode - simulate a response
+            const demoResponse = getDemoResponse(content);
+            setTimeout(() => {
+              if (isStreamingEnabled) {
+                simulateStreaming(assistantMessageId, demoResponse);
+              } else {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, content: demoResponse, status: 'complete' }
+                      : m
+                  )
+                );
+              }
+              setIsLoading(false);
+            }, 300);
+            return;
+          }
+  
+          const response = await fetch(webhookConfig.url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: content.trim(),
+              timestamp: new Date().toISOString(),
+              sessionId,
+            }),
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+  
+          const data = await response.json();
+          const responseContent =
+            (typeof data.output === 'object' ? data.output?.response : data.output) ||
+            data.response ||
+            data.message ||
+            data.content ||
+            JSON.stringify(data);
+  
+          if (isStreamingEnabled) {
+            simulateStreaming(assistantMessageId, responseContent);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: responseContent, status: 'complete' }
+                  : m
+              )
+            );
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Connection failed';
+  
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === messageId
-                ? { ...m, content: fullContent, status: 'complete' }
+              m.id === assistantMessageId
+                ? {
+                    ...m,
+                    content: `Error: ${errorMessage}. Check your webhook URL and try again.`,
+                    status: 'error',
+                  }
                 : m
             )
           );
-          clearInterval(streamInterval);
-        } else {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === messageId
-                ? { ...m, content: fullContent.slice(0, currentIndex) }
-                : m
-            )
-          );
+        } finally {
+          setIsLoading(false);
         }
-      }, baseDelay + Math.random() * 15);
-
-      return () => clearInterval(streamInterval);
-    },
-    []
-  );
-
-  const sendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim() || isLoading) return;
-
-      const userMessage: Message = {
-        id: generateId(),
-        role: 'user',
-        content: content.trim(),
-        timestamp: new Date(),
-        status: 'complete',
-      };
-
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
-
-      const assistantMessageId = generateId();
-      const placeholderMessage: Message = {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-        status: 'streaming',
-      };
-
-      setMessages((prev) => [...prev, placeholderMessage]);
-
-      try {
-        if (!webhookConfig.url) {
-          // Demo mode - simulate a response
-          const demoResponse = getDemoResponse(content);
-          setTimeout(() => {
-            simulateStreaming(assistantMessageId, demoResponse);
-            setIsLoading(false);
-          }, 300);
-          return;
-        }
-
-        const response = await fetch(webhookConfig.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: content.trim(),
-            timestamp: new Date().toISOString(),
-            sessionId,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const responseContent =
-          (typeof data.output === 'object' ? data.output?.response : data.output) ||
-          data.response ||
-          data.message ||
-          data.content ||
-          JSON.stringify(data);
-
-        simulateStreaming(assistantMessageId, responseContent);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Connection failed';
-
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMessageId
-              ? {
-                  ...m,
-                  content: `Error: ${errorMessage}. Check your webhook URL and try again.`,
-                  status: 'error',
-                }
-              : m
-          )
-        );
-      } finally {
-        setIsLoading(false);
+      },
+      [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled]
+    );
+  
+    const retryLastMessage = useCallback(() => {
+      const lastUserMessage = [...messages]
+        .reverse()
+        .find((m) => m.role === 'user');
+      if (lastUserMessage) {
+        // Remove the error message
+        setMessages((prev) => prev.slice(0, -1));
+        sendMessage(lastUserMessage.content);
       }
-    },
-    [webhookConfig.url, isLoading, simulateStreaming, sessionId]
-  );
-
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    localStorage.removeItem(MESSAGES_STORAGE_KEY);
-    const newSessionId = generateId();
-    sessionStorage.setItem(SESSION_ID_STORAGE_KEY, newSessionId);
-    setSessionId(newSessionId);
-  }, []);
-
-  const retryLastMessage = useCallback(() => {
-    const lastUserMessage = [...messages]
-      .reverse()
-      .find((m) => m.role === 'user');
-    if (lastUserMessage) {
-      // Remove the error message
-      setMessages((prev) => prev.slice(0, -1));
-      sendMessage(lastUserMessage.content);
-    }
-  }, [messages, sendMessage]);
-
-  return {
-    messages,
-    isLoading,
-    webhookConfig,
-    sendMessage,
-    updateWebhookUrl,
-    clearMessages,
-    retryLastMessage,
-  };
-}
-
+    }, [messages, sendMessage]);
+  			
+    return {
+      messages,
+      isLoading,
+      webhookConfig,
+      isStreamingEnabled,
+      sendMessage,
+      updateWebhookUrl,
+      toggleStreaming,
+      clearMessages,
+      retryLastMessage,
+    };
+  }
 function getDemoResponse(input: string): string {
   const responses = [
     "I'm VoltChat running in demo mode. Configure a webhook URL to connect to your AI backend.",

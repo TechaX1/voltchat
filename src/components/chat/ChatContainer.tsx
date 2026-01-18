@@ -12,8 +12,10 @@ export function ChatContainer() {
     messages,
     isLoading,
     webhookConfig,
+    isStreamingEnabled,
     sendMessage,
     updateWebhookUrl,
+    toggleStreaming,
     clearMessages,
     retryLastMessage,
   } = useChat();
@@ -34,6 +36,8 @@ export function ChatContainer() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onClearChat={clearMessages}
           messagesCount={messages.length}
+          isStreamingEnabled={isStreamingEnabled}
+          onToggleStreaming={toggleStreaming}
         />
 
         {/* Messages area */}
