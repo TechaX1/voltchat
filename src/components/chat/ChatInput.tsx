@@ -87,12 +87,12 @@ export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInpu
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-sm px-4 py-4">
+    <div className="bg-background/80 backdrop-blur-sm px-4 py-4">
       <div className="mx-auto max-w-3xl">
         <div
           className={cn(
-            'relative flex items-end gap-2 rounded-3xl border bg-card p-2 transition-all duration-200',
-            'focus-within:border-primary/50 focus-within:volt-glow',
+            'relative flex items-end gap-2 rounded-3xl bg-card p-2 transition-all duration-200',
+            'focus-within:volt-glow',
             isLoading && 'opacity-70'
           )}
         >
