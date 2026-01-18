@@ -9,7 +9,7 @@
 */
 
 @layer base {
-  :root {
+  :root.dark {
     --background: 220 20% 4%;
     --foreground: 210 40% 98%;
 
@@ -56,6 +56,56 @@
     --sidebar-accent: 220 15% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 187 100% 42%;
+  }
+
+  :root.light {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 4%;
+
+    --card: 0 0% 96%;
+    --card-foreground: 220 20% 4%;
+
+    --popover: 0 0% 96%;
+    --popover-foreground: 220 20% 4%;
+
+    --primary: 187 100% 42%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 280 100% 65%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 0 0% 90%;
+    --muted-foreground: 215 20% 45%;
+
+    --accent: 280 100% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 187 100% 42%;
+
+    --radius: 0.5rem;
+
+    /* VoltChat specific tokens */
+    --volt-glow: 187 100% 42%;
+    --volt-pulse: 280 100% 65%;
+    --volt-shimmer-start: 187 100% 42%;
+    --volt-shimmer-end: 280 100% 65%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 20% 4%;
+    --sidebar-primary: 187 100% 42%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 220 20% 4%;
+    --sidebar-border: 0 0% 85%;
     --sidebar-ring: 187 100% 42%;
   }
 }

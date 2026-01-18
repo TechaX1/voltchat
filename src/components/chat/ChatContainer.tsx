@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useChat } from '@/hooks/useChat';
+import { useTheme } from '@/hooks/useTheme';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -22,6 +23,7 @@ export function ChatContainer() {
     retryLastMessage,
     stopStreaming,
   } = useChat();
+  const { theme, toggleTheme } = useTheme();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -64,6 +66,8 @@ export function ChatContainer() {
             onToggleStreaming={toggleStreaming}
             onToggleSidebar={toggleSidebar}
             isSidebarOpen={isSidebarOpen}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
 
           {/* Messages area */}

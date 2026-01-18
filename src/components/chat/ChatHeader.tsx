@@ -1,4 +1,4 @@
-import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -18,6 +18,8 @@ interface ChatHeaderProps {
   onToggleStreaming: () => void;
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
+  theme: string;
+  onToggleTheme: () => void;
 }
 
 export function ChatHeader({
@@ -29,6 +31,8 @@ export function ChatHeader({
   onToggleStreaming,
   onToggleSidebar,
   isSidebarOpen,
+  theme,
+  onToggleTheme,
 }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between bg-background/80 backdrop-blur-sm px-4">
@@ -80,6 +84,27 @@ export function ChatHeader({
 
       {/* Actions */}
       <div className="flex items-center gap-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleTheme}
+              className="h-8 w-8 text-muted-foreground"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </TooltipContent>
+        </Tooltip>
+
         <div className="flex items-center space-x-2">
           <Switch
             id="streaming-toggle"
