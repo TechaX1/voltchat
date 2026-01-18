@@ -2,6 +2,7 @@ import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   message: Message;
@@ -31,14 +32,24 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
         )}
       >
         {/* Message content */}
-        <div
-          className={cn(
-            'text-sm leading-relaxed whitespace-pre-wrap break-words',
-            isStreaming && message.content && 'cursor-blink'
-          )}
-        >
-          {message.content || (isStreaming && <span className="text-muted-foreground">...</span>)}
-        </div>
+        {isUser ? (
+          <div
+            className={cn(
+              'text-sm leading-relaxed whitespace-pre-wrap break-words'
+            )}
+          >
+            {message.content}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'prose dark:prose-invert prose-sm max-w-none',
+              isStreaming && message.content && 'cursor-blink'
+            )}
+          >
+            <ReactMarkdown>{message.content || (isStreaming ? '...' : '')}</ReactMarkdown>
+          </div>
+        )}
 
         {/* Error state with retry */}
         {isError && onRetry && (
