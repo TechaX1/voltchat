@@ -73,8 +73,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
         ) : (
           <div
             className={cn(
-              'prose dark:prose-invert prose-sm max-w-none',
-              isStreaming && message.content && 'cursor-blink inline-block'
+              'prose dark:prose-invert prose-sm max-w-none'
             )}
           >
             {message.content ? (
