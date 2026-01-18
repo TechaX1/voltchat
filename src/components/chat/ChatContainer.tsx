@@ -5,7 +5,9 @@ import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { WebhookSettings } from './WebhookSettings';
+import { Sidebar } from '../Sidebar';
 import { Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function ChatContainer() {
   const {
@@ -22,8 +24,13 @@ export function ChatContainer() {
   } = useChat();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
 
   // Auto-scroll to bottom on new messages, but only if user is near the bottom
   useEffect(() => {
@@ -38,53 +45,65 @@ export function ChatContainer() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-screen flex-col bg-background">
-        <ChatHeader
-          isConnected={webhookConfig.isConnected}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onClearChat={clearMessages}
-          messagesCount={messages.length}
-          isStreamingEnabled={isStreamingEnabled}
-          onToggleStreaming={toggleStreaming}
-        />
-
-        {/* Messages area */}
-        <main ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-          {messages.length === 0 ? (
-            <EmptyState onOpenSettings={() => setIsSettingsOpen(true)} />
-          ) : (
-            <div className="mx-auto max-w-3xl py-4">
-              {messages.map((message, index) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  onRetry={
-                    message.status === 'error' && index === messages.length - 1
-                      ? retryLastMessage
-                      : undefined
-                  }
-                />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+      <div className="flex h-screen bg-background">
+        <div
+          className={cn(
+            'border-r border-border transition-all duration-300 ease-in-out',
+            isSidebarOpen ? 'w-72' : 'w-0 p-0'
           )}
-        </main>
+        >
+          <Sidebar onNewChat={clearMessages} webhookConfig={webhookConfig} />
+        </div>
+        <div className="flex flex-1 flex-col">
+          <ChatHeader
+            isConnected={webhookConfig.isConnected}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onClearChat={clearMessages}
+            messagesCount={messages.length}
+            isStreamingEnabled={isStreamingEnabled}
+            onToggleStreaming={toggleStreaming}
+            onToggleSidebar={toggleSidebar}
+            isSidebarOpen={isSidebarOpen}
+          />
 
-        <ChatInput
-          onSend={sendMessage}
-          isLoading={isLoading}
-          isConnected={webhookConfig.isConnected}
-          messages={messages}
-          isStreamingEnabled={isStreamingEnabled}
-          onStopStreaming={stopStreaming}
-        />
+          {/* Messages area */}
+          <main ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+            {messages.length === 0 ? (
+              <EmptyState onOpenSettings={() => setIsSettingsOpen(true)} />
+            ) : (
+              <div className="mx-auto max-w-3xl py-4">
+                {messages.map((message, index) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    onRetry={
+                      message.status === 'error' && index === messages.length - 1
+                        ? retryLastMessage
+                        : undefined
+                    }
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </main>
 
-        <WebhookSettings
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          webhookUrl={webhookConfig.url}
-          onUpdateUrl={updateWebhookUrl}
-        />
+          <ChatInput
+            onSend={sendMessage}
+            isLoading={isLoading}
+            isConnected={webhookConfig.isConnected}
+            messages={messages}
+            isStreamingEnabled={isStreamingEnabled}
+            onStopStreaming={stopStreaming}
+          />
+
+          <WebhookSettings
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            webhookUrl={webhookConfig.url}
+            onUpdateUrl={updateWebhookUrl}
+          />
+        </div>
       </div>
     </TooltipProvider>
   );

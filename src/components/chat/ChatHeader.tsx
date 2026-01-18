@@ -1,4 +1,4 @@
-import { Zap, Settings, Trash2 } from 'lucide-react';
+import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -16,6 +16,8 @@ interface ChatHeaderProps {
   messagesCount: number;
   isStreamingEnabled: boolean;
   onToggleStreaming: () => void;
+  onToggleSidebar: () => void;
+  isSidebarOpen: boolean;
 }
 
 export function ChatHeader({
@@ -25,29 +27,54 @@ export function ChatHeader({
   messagesCount,
   isStreamingEnabled,
   onToggleStreaming,
+  onToggleSidebar,
+  isSidebarOpen,
 }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between bg-background/80 backdrop-blur-sm px-4">
-      {/* Logo / Title */}
       <div className="flex items-center gap-2">
-        <div
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-md',
-            'bg-primary/10 text-primary',
-            isConnected && 'volt-glow'
-          )}
-        >
-          <Zap className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-sm font-semibold tracking-tight">VoltChat</h1>
-          <p className="font-mono text-[10px] text-muted-foreground">
-            {isConnected ? (
-              <span className="text-success">Connected. Ready.</span>
-            ) : (
-              <span>Demo mode</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSidebar}
+              className="h-8 w-8 text-muted-foreground"
+            >
+              {isSidebarOpen ? (
+                <PanelLeftClose className="h-4 w-4" />
+              ) : (
+                <PanelLeft className="h-4 w-4" />
+              )}
+              <span className="sr-only">Toggle sidebar</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Logo / Title */}
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-md',
+              'bg-primary/10 text-primary',
+              isConnected && 'volt-glow'
             )}
-          </p>
+          >
+            <Zap className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-sm font-semibold tracking-tight">VoltChat</h1>
+            <p className="font-mono text-[10px] text-muted-foreground">
+              {isConnected ? (
+                <span className="text-success">Connected. Ready.</span>
+              ) : (
+                <span>Demo mode</span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 
