@@ -1,8 +1,14 @@
 import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
-import { AlertCircle, RotateCcw } from 'lucide-react';
+import { AlertCircle, RotateCcw, Clipboard, Check, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import ReactMarkdown from 'react-markdown';
+import { useState } from 'react';
 
 interface ChatMessageProps {
   message: Message;
@@ -10,9 +16,33 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, onRetry }: ChatMessageProps) {
+  const [isCopied, setIsCopied] = useState(false);
+  const [thumbUpActive, setThumbUpActive] = useState(false);
+  const [thumbDownActive, setThumbDownActive] = useState(false);
   const isUser = message.role === 'user';
   const isStreaming = message.status === 'streaming';
   const isError = message.status === 'error';
+
+  const handleCopy = () => {
+    if (message.content) {
+      navigator.clipboard.writeText(message.content).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      });
+    }
+  };
+
+  const handleThumbUp = () => {
+    setThumbUpActive(!thumbUpActive);
+    setThumbDownActive(false);
+    console.log('Thumbs Up clicked. Active:', !thumbUpActive);
+  };
+
+  const handleThumbDown = () => {
+    setThumbDownActive(!thumbDownActive);
+    setThumbUpActive(false);
+    console.log('Thumbs Down clicked. Active:', !thumbDownActive);
+  };
 
   return (
     <div
@@ -23,10 +53,10 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'relative max-w-[85%] md:max-w-[70%] rounded-lg px-4 py-3',
+          'relative max-w-[85%] md:max-w-[70%] rounded-3xl px-4 py-3',
           isUser
             ? 'bg-primary text-primary-foreground volt-glow'
-            : 'bg-card border border-border',
+            : 'bg-transparent border-transparent',
           isError && 'border-destructive/50 bg-destructive/10',
           isStreaming && 'volt-shimmer'
         )}
@@ -67,24 +97,65 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
           </div>
         )}
 
-        {/* Timestamp */}
-        <div
-          className={cn(
-            'mt-1.5 font-mono text-[10px] opacity-50',
-            isUser ? 'text-primary-foreground' : 'text-muted-foreground'
-          )}
-        >
-          {formatTime(message.timestamp)}
-        </div>
+        {/* Action buttons for AI messages */}
+        {!isUser && !isStreaming && !isError && (
+          <div className="mt-2 flex items-center justify-start gap-1">
+            {message.content && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopy}
+                    className="h-7 w-7 text-xs text-muted-foreground opacity-50 hover:opacity-100 transition-opacity"
+                  >
+                    {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Clipboard className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleThumbUp}
+                  className={cn(
+                    "h-7 w-7 text-xs opacity-50 hover:opacity-100 transition-opacity",
+                    thumbUpActive ? "text-accent" : "text-muted-foreground"
+                  )}
+                >
+                  <ThumbsUp className={cn("h-4 w-4", thumbUpActive && "fill-accent")} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Good response</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleThumbDown}
+                  className={cn(
+                    "h-7 w-7 text-xs opacity-50 hover:opacity-100 transition-opacity",
+                    thumbDownActive ? "text-accent" : "text-muted-foreground"
+                  )}
+                >
+                  <ThumbsDown className={cn("h-4 w-4", thumbDownActive && "fill-accent")} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Bad response</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
       </div>
     </div>
   );
-}
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
 }

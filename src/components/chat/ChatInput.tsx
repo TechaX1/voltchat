@@ -91,7 +91,7 @@ export function ChatInput({ onSend, isLoading, isConnected, messages }: ChatInpu
       <div className="mx-auto max-w-3xl">
         <div
           className={cn(
-            'relative flex items-end gap-2 rounded-lg border bg-card p-2 transition-all duration-200',
+            'relative flex items-end gap-2 rounded-3xl border bg-card p-2 transition-all duration-200',
             'focus-within:border-primary/50 focus-within:volt-glow',
             isLoading && 'opacity-70'
           )}
