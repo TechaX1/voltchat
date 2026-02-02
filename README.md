@@ -20,6 +20,24 @@ If no webhook is configured, the application runs in a "demo mode" with simulate
 
 The project uses `npm` for package management.
 
+### Docker: build-only image (artifacts only)
+
+This repository includes a build-only `DOCKERFILE` which produces a minimal image containing the built static files at `/dist` and does not include any web server.
+
+Build the image (PowerShell):
+
+```powershell
+docker build -t voltchat:dist .
+```
+
+After building, the image will contain the files at `/dist`. You can extract them or use a small server image to serve them if you need to run the app in a container:
+
+```powershell
+# extract dist from the image
+docker create --name tmp voltchat:dist; docker cp tmp:/dist ./dist; docker rm tmp
+```
+
+
 ### Setup Locally:
 
 *   **Clone Project:**
