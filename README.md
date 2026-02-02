@@ -1,5 +1,9 @@
 # VoltChat ⚡
 
+![Screenshot 2026-01-18 175318](https://github.com/user-attachments/assets/8ccad6d3-b541-4acd-b1f2-34805dbee882)![Screenshot 2026-01-18 175334](https://github.com/user-attachments/assets/af611872-a2dc-4432-b8f6-ff2e1450f7cd)
+
+
+
 ## Project info
 
 This project, named "VoltChat", is a high-performance, frontend chat interface designed for developers. It's built using a modern web stack including **Vite, React, TypeScript, and Tailwind CSS**. The UI is composed of components from **shadcn-ui**.
