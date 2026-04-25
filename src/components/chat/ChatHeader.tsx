@@ -20,6 +20,7 @@ interface ChatHeaderProps {
   isSidebarOpen: boolean;
   theme: string;
   onToggleTheme: () => void;
+  isExternal?: boolean;
 }
 
 export function ChatHeader({
@@ -33,6 +34,7 @@ export function ChatHeader({
   isSidebarOpen,
   theme,
   onToggleTheme,
+  isExternal,
 }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between bg-background/80 backdrop-blur-sm px-4">
@@ -70,7 +72,7 @@ export function ChatHeader({
             <Zap className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold tracking-tight">VoltChat</h1>
+            <h1 className="text-sm font-semibold tracking-tight">[App Name]</h1>
             <p className="font-mono text-[10px] text-muted-foreground">
               {isConnected ? (
                 <span className="text-success">Connected. Ready.</span>
@@ -133,25 +135,27 @@ export function ChatHeader({
           </Tooltip>
         )}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onOpenSettings}
-              className={cn(
-                'h-8 w-8',
-                isConnected
-                  ? 'text-primary hover:text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              <span className="sr-only">Webhook settings</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Webhook settings</TooltipContent>
-        </Tooltip>
+        {!isExternal && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenSettings}
+                className={cn(
+                  'h-8 w-8',
+                  isConnected
+                    ? 'text-primary hover:text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">Webhook settings</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Webhook settings</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </header>
   );

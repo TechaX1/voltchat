@@ -9,11 +9,14 @@ const STREAMING_ENABLED_KEY = 'voltchat-streaming-enabled';
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export function useChat() {
+  const ENV_WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL;
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
-    url: '',
-    isConnected: false,
+    url: ENV_WEBHOOK_URL || '',
+    isConnected: !!ENV_WEBHOOK_URL,
+    isExternal: !!ENV_WEBHOOK_URL, // Track if it's fixed via Env
   });
   const [isStreamingEnabled, setIsStreamingEnabled] = useState(true);
   const [sessionId, setSessionId] = useState<string>(() => {
@@ -32,8 +35,8 @@ export function useChat() {
     const savedMessages = localStorage.getItem(MESSAGES_STORAGE_KEY);
     const savedStreaming = localStorage.getItem(STREAMING_ENABLED_KEY);
 
-    if (savedUrl) {
-      setWebhookConfig({ url: savedUrl, isConnected: true });
+    if (!ENV_WEBHOOK_URL && savedUrl) {
+      setWebhookConfig({ url: savedUrl, isConnected: true, isExternal: false });
     }
 
     if (savedMessages) {
@@ -79,14 +82,16 @@ export function useChat() {
     }, []);
   
     const updateWebhookUrl = useCallback((url: string) => {
+      if (ENV_WEBHOOK_URL) return; // Prevent manual updates if env var is set
       const trimmedUrl = url.trim();
       localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
       setWebhookConfig({
         url: trimmedUrl,
         isConnected: trimmedUrl.length > 0,
+        isExternal: false,
       });
       clearMessages();
-    }, [clearMessages]);
+    }, [clearMessages, ENV_WEBHOOK_URL]);
   
     const toggleStreaming = useCallback(() => {
       setIsStreamingEnabled((prev) => !prev);

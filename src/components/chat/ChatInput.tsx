@@ -11,6 +11,7 @@ interface ChatInputProps {
   messages: Message[];
   isStreamingEnabled: boolean;
   onStopStreaming: () => void;
+  transparent?: boolean;
 }
 
 export function ChatInput({
@@ -20,6 +21,7 @@ export function ChatInput({
   messages,
   isStreamingEnabled,
   onStopStreaming,
+  transparent,
 }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -96,7 +98,10 @@ export function ChatInput({
   };
 
   return (
-    <div className="bg-background/80 backdrop-blur-sm px-4 py-4">
+    <div className={cn(
+      "px-4 py-4",
+      !transparent && "bg-background/80 backdrop-blur-sm"
+    )}>
       <div className="mx-auto max-w-3xl">
         <div
           className={cn(
