@@ -125,13 +125,14 @@ export function ChatInput({
 
   return (
     <div className={cn(
-      "px-4 py-4",
-      !transparent && "bg-background/80 backdrop-blur-sm"
+      "px-4 py-6 pointer-events-none",
+      !transparent && "bg-gradient-to-t from-background via-background/40 to-transparent pt-12"
     )}>
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl pointer-events-auto">
         <div
           className={cn(
-            'relative flex items-center gap-2 rounded-full bg-secondary/70 p-1.5 transition-all duration-200 border border-border/40',
+            'relative flex items-center gap-2 rounded-full bg-secondary/40 backdrop-blur-xl p-1.5 transition-all duration-200 border border-border/40 shadow-2xl',
+            'focus-within:volt-glow focus-within:bg-secondary/50 focus-within:border-primary/30',
             isLoading && 'opacity-70'
           )}
         >

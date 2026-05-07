@@ -4,8 +4,10 @@ type Theme = 'dark' | 'light' | 'deep-dark';
 
 const THEME_STORAGE_KEY = 'voltchat-theme';
 
+const DEFAULT_THEME = (import.meta.env.VITE_DEFAULT_THEME as Theme) || 'dark';
+
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;

@@ -31,7 +31,7 @@ export function ChatContainer() {
   const { theme, toggleTheme } = useTheme();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +61,7 @@ export function ChatContainer() {
         >
           <Sidebar onNewChat={clearMessages} webhookConfig={webhookConfig} />
         </div>
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col relative overflow-hidden">
           <ChatHeader
             isConnected={webhookConfig.isConnected}
             onOpenSettings={() => setIsSettingsOpen(true)}
@@ -104,7 +104,7 @@ export function ChatContainer() {
                 </div>
               </div>
             ) : (
-              <div className="mx-auto max-w-3xl py-4">
+              <div className="mx-auto max-w-3xl py-4 pb-32">
                 {messages.map((message, index) => (
                   <ChatMessage
                     key={message.id}
@@ -122,16 +122,18 @@ export function ChatContainer() {
           </main>
 
           {messages.length > 0 && (
-            <ChatInput
-              onSend={sendMessage}
-              isLoading={isLoading}
-              isConnected={webhookConfig.isConnected}
-              messages={messages}
-              isStreamingEnabled={isStreamingEnabled}
-              onStopStreaming={stopStreaming}
-              onUpload={uploadFile}
-              hasUploadConfig={hasUploadConfig}
-            />
+            <div className="absolute bottom-0 left-0 right-0 z-10">
+              <ChatInput
+                onSend={sendMessage}
+                isLoading={isLoading}
+                isConnected={webhookConfig.isConnected}
+                messages={messages}
+                isStreamingEnabled={isStreamingEnabled}
+                onStopStreaming={stopStreaming}
+                onUpload={uploadFile}
+                hasUploadConfig={hasUploadConfig}
+              />
+            </div>
           )}
 
           <WebhookSettings
