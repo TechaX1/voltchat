@@ -3,10 +3,3 @@ services:
     build: .
     container_name: voltchat  # <--- Remember this name!
     restart: always
-    networks:
-      - web_gateway
-
-# Connect to the highway you created earlier
-networks:
-  web_gateway:
-    external: true

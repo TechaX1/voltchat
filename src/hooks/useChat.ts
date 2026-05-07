@@ -9,11 +9,21 @@ const STREAMING_ENABLED_KEY = 'voltchat-streaming-enabled';
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export function useChat() {
+  const ENV_WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL;
+  const ENV_API_TOKEN = import.meta.env.VITE_API_TOKEN;
+  const ENV_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL;
+  const ENV_APP_NAME = import.meta.env.VITE_APP_NAME || 'VoltChat';
+  const ENV_APP_DESCRIPTION = import.meta.env.VITE_APP_DESCRIPTION || 'A high-performance chat interface.';
+  const ENV_ENABLE_UPLOADS = import.meta.env.VITE_ENABLE_UPLOADS === 'true';
+  const ENV_APP_LOGO_URL = import.meta.env.VITE_APP_LOGO_URL || '';
+  const ENV_FAVICON_URL = import.meta.env.VITE_FAVICON_URL || '';
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
-    url: '',
-    isConnected: false,
+    url: ENV_WEBHOOK_URL || '',
+    isConnected: !!ENV_WEBHOOK_URL,
+    isExternal: !!ENV_WEBHOOK_URL, // Track if it's fixed via Env
   });
   const [isStreamingEnabled, setIsStreamingEnabled] = useState(true);
   const [sessionId, setSessionId] = useState<string>(() => {
@@ -32,8 +42,8 @@ export function useChat() {
     const savedMessages = localStorage.getItem(MESSAGES_STORAGE_KEY);
     const savedStreaming = localStorage.getItem(STREAMING_ENABLED_KEY);
 
-    if (savedUrl) {
-      setWebhookConfig({ url: savedUrl, isConnected: true });
+    if (!ENV_WEBHOOK_URL && savedUrl) {
+      setWebhookConfig({ url: savedUrl, isConnected: true, isExternal: false });
     }
 
     if (savedMessages) {
@@ -79,14 +89,16 @@ export function useChat() {
     }, []);
   
     const updateWebhookUrl = useCallback((url: string) => {
+      if (ENV_WEBHOOK_URL) return; // Prevent manual updates if env var is set
       const trimmedUrl = url.trim();
       localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
       setWebhookConfig({
         url: trimmedUrl,
         isConnected: trimmedUrl.length > 0,
+        isExternal: false,
       });
       clearMessages();
-    }, [clearMessages]);
+    }, [clearMessages, ENV_WEBHOOK_URL]);
   
     const toggleStreaming = useCallback(() => {
       setIsStreamingEnabled((prev) => !prev);
@@ -184,10 +196,17 @@ export function useChat() {
             return;
           }
   
+          console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
+            message: content.trim(),
+            sessionId,
+            timestamp: new Date().toISOString()
+          });
+
           const response = await fetch(webhookConfig.url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
             },
             body: JSON.stringify({
               message: content.trim(),
@@ -195,12 +214,15 @@ export function useChat() {
               sessionId,
             }),
           });
+
+          console.log(`[useChat] Response status: ${response.status} ${response.statusText}`);
   
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
   
           const data = await response.json();
+          console.log('[useChat] Received data:', data);
           const responseContent =
             (typeof data.output === 'object' ? data.output?.response : data.output) ||
             data.response ||
@@ -221,6 +243,7 @@ export function useChat() {
             setIsLoading(false);
           }
         } catch (error) {
+          console.error('[useChat] Send message error:', error);
           const errorMessage =
             error instanceof Error ? error.message : 'Connection failed';
   
@@ -250,6 +273,63 @@ export function useChat() {
         sendMessage(lastUserMessage.content);
       }
     }, [messages, sendMessage]);
+
+    const uploadFile = useCallback(async (file: File) => {
+      if (!ENV_UPLOAD_URL) {
+        console.warn('VITE_UPLOAD_URL is not configured');
+        return { success: false, message: 'Upload URL not configured' };
+      }
+
+      setIsLoading(true);
+      try {
+        console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(ENV_UPLOAD_URL, {
+          method: 'POST',
+          headers: {
+            ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
+          },
+          body: formData,
+        });
+
+        console.log(`[useChat] Upload response status: ${response.status}`);
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('[useChat] Upload success data:', data);
+        
+        // Add a system message about the upload
+        const systemMessage: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: `Successfully uploaded file: **${file.name}**`,
+          timestamp: new Date(),
+          status: 'complete',
+        };
+        setMessages(prev => [...prev, systemMessage]);
+
+        return { success: true, data };
+      } catch (error) {
+        console.error('[useChat] Upload error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+        const errorMsg: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: `Error uploading file: ${errorMessage}`,
+          timestamp: new Date(),
+          status: 'error',
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        return { success: false, message: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    }, [ENV_UPLOAD_URL, ENV_API_TOKEN]);
   			
     return {
       messages,
@@ -262,6 +342,11 @@ export function useChat() {
       clearMessages,
       retryLastMessage,
       stopStreaming,
+      uploadFile,
+      hasUploadConfig: !!ENV_UPLOAD_URL && ENV_ENABLE_UPLOADS,
+      appName: ENV_APP_NAME,
+      appDescription: ENV_APP_DESCRIPTION,
+      appLogoUrl: ENV_APP_LOGO_URL,
     };
   }
 function getDemoResponse(input: string): string {

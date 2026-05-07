@@ -56,7 +56,7 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
         className={cn(
           'relative max-w-[85%] md:max-w-[70%] rounded-3xl px-4 py-3',
           isUser
-            ? 'bg-primary text-primary-foreground volt-glow'
+            ? 'bg-primary text-primary-foreground'
             : 'bg-transparent border-transparent',
           isError && 'border-destructive/50 bg-destructive/10'
         )}

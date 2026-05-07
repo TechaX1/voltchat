@@ -36,6 +36,7 @@ export function WebhookSettings({
     setTestError('');
 
     try {
+      console.log(`[WebhookSettings] Testing connection to: ${inputUrl}`);
       const response = await fetch(inputUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,12 +47,15 @@ export function WebhookSettings({
         }),
       });
 
+      console.log(`[WebhookSettings] Test response status: ${response.status}`);
+
       if (response.ok) {
         setTestStatus('success');
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
+      console.error('[WebhookSettings] Test connection error:', error);
       setTestStatus('error');
       setTestError(error instanceof Error ? error.message : 'Connection failed');
     }
@@ -155,7 +159,7 @@ export function WebhookSettings({
                 'Test Connection'
               )}
             </Button>
-            <Button onClick={handleSave} className="flex-1 volt-glow">
+            <Button onClick={handleSave} className="flex-1">
               Save
             </Button>
           </div>

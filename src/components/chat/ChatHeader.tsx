@@ -1,4 +1,4 @@
-import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose, Sun, Moon } from 'lucide-react';
+import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose, Sun, Moon, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -20,6 +20,9 @@ interface ChatHeaderProps {
   isSidebarOpen: boolean;
   theme: string;
   onToggleTheme: () => void;
+  isExternal?: boolean;
+  appName: string;
+  appLogoUrl?: string;
 }
 
 export function ChatHeader({
@@ -33,6 +36,9 @@ export function ChatHeader({
   isSidebarOpen,
   theme,
   onToggleTheme,
+  isExternal,
+  appName,
+  appLogoUrl,
 }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between bg-background/80 backdrop-blur-sm px-4">
@@ -62,15 +68,19 @@ export function ChatHeader({
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-md',
+              'flex h-8 w-8 items-center justify-center rounded-md overflow-hidden',
               'bg-primary/10 text-primary',
-              isConnected && 'volt-glow'
+              appLogoUrl && "p-0 bg-transparent"
             )}
           >
-            <Zap className="h-5 w-5" />
+            {appLogoUrl ? (
+              <img src={appLogoUrl} alt={appName} className="h-full w-full object-cover" />
+            ) : (
+              <Zap className="h-5 w-5" />
+            )}
           </div>
           <div>
-            <h1 className="text-sm font-semibold tracking-tight">VoltChat</h1>
+            <h1 className="text-sm font-semibold tracking-tight">{appName}</h1>
             <p className="font-mono text-[10px] text-muted-foreground">
               {isConnected ? (
                 <span className="text-success">Connected. Ready.</span>
@@ -92,16 +102,16 @@ export function ChatHeader({
               onClick={onToggleTheme}
               className="h-8 w-8 text-muted-foreground"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              {theme === 'dark' && <Sun className="h-4 w-4" />}
+              {theme === 'light' && <Palette className="h-4 w-4" />}
+              {theme === 'deep-dark' && <Moon className="h-4 w-4" />}
               <span className="sr-only">Toggle theme</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            {theme === 'dark' && 'Switch to Light'}
+            {theme === 'light' && 'Switch to Onyx'}
+            {theme === 'deep-dark' && 'Switch to Dark'}
           </TooltipContent>
         </Tooltip>
 
@@ -133,25 +143,27 @@ export function ChatHeader({
           </Tooltip>
         )}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onOpenSettings}
-              className={cn(
-                'h-8 w-8',
-                isConnected
-                  ? 'text-primary hover:text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              <span className="sr-only">Webhook settings</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Webhook settings</TooltipContent>
-        </Tooltip>
+        {!isExternal && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenSettings}
+                className={cn(
+                  'h-8 w-8',
+                  isConnected
+                    ? 'text-primary hover:text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">Webhook settings</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Webhook settings</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </header>
   );

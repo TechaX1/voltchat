@@ -13,6 +13,7 @@ export interface Message {
 export interface WebhookConfig {
   url: string;
   isConnected: boolean;
+  isExternal?: boolean;
 }
 
 export interface ChatState {
