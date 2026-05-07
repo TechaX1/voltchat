@@ -8,7 +8,7 @@
 
 This project, named "VoltChat", is a high-performance, frontend chat interface designed for developers. It's built using a modern web stack including **Vite, React, TypeScript, and Tailwind CSS**. The UI is composed of components from **shadcn-ui**.
 
-The core functionality allows a user to interact with an AI backend. The application is architected to be backend-agnostic; it connects to any AI service via a configurable **webhook URL**. Messages are sent to this webhook, and responses are streamed back to the user interface.
+The core functionality allows a user to interact with an AI backend. The application is architected to be backend-agnostic; it connects to any AI service via a configurable **webhook URL**. See the [Backend Connection Guide](./connect-to-backend.md) for detailed integration instructions.
 
 If no webhook is configured, the application runs in a "demo mode" with simulated, pre-defined responses. State, including the webhook URL and chat history, is persisted in the browser's `localStorage`.
 
@@ -19,6 +19,35 @@ If no webhook is configured, the application runs in a "demo mode" with simulate
 *   **Demo Mode:** Fully functional UI even without a backend connected.
 *   **Streaming Responses:** Simulates a real-time streaming effect for incoming messages.
 *   **Modern Stack:** Utilizes Vite for fast development and bundling, with a full TypeScript and React foundation.
+
+## Configuration
+
+VoltChat is designed to be easily integrated with your own AI backend. You can configure it using environment variables in a `.env` file at the root of the project:
+
+```env
+# The URL of your AI chat endpoint (POST)
+VITE_WEBHOOK_URL=https://your-api.com/chat
+
+# Optional: Bearer token for authentication
+VITE_API_TOKEN=your_secure_token
+
+# Branding and Customization
+VITE_APP_NAME=VoltChat
+VITE_APP_DESCRIPTION=A high-performance chat interface.
+VITE_APP_LOGO_URL=https://your-api.com/logo.png
+VITE_FAVICON_URL=https://your-api.com/favicon.svg
+
+# File Upload Configuration
+VITE_ENABLE_UPLOADS=true
+VITE_UPLOAD_URL=https://your-api.com/upload
+```
+
+### Integration Details
+- **Branding**: `VITE_APP_NAME`, `VITE_APP_DESCRIPTION`, `VITE_APP_LOGO_URL`, and `VITE_FAVICON_URL` will update the UI title, welcome message, logos, and icons.
+- **Upload Toggle**: Setting `VITE_ENABLE_UPLOADS=false` will hide the `+` button entirely, even if a URL is provided.
+- **Chat**: Messages are sent as a POST request with a JSON body: `{ "message": "string", "sessionId": "string", "timestamp": "ISO-string" }`.
+- **Upload**: Files are sent as `multipart/form-data` with the key `file`.
+- **Auth**: If `VITE_API_TOKEN` is set, all requests will include an `Authorization: Bearer <token>` header.
 
 ## Building and Running
 

@@ -22,6 +22,11 @@ export function ChatContainer() {
     clearMessages,
     retryLastMessage,
     stopStreaming,
+    uploadFile,
+    hasUploadConfig,
+    appName,
+    appDescription,
+    appLogoUrl,
   } = useChat();
   const { theme, toggleTheme } = useTheme();
 
@@ -69,6 +74,8 @@ export function ChatContainer() {
             theme={theme}
             onToggleTheme={toggleTheme}
             isExternal={webhookConfig.isExternal}
+            appName={appName}
+            appLogoUrl={appLogoUrl}
           />
 
           {/* Messages area */}
@@ -78,6 +85,9 @@ export function ChatContainer() {
                 <EmptyState 
                   onOpenSettings={() => setIsSettingsOpen(true)} 
                   isExternal={webhookConfig.isExternal} 
+                  appName={appName}
+                  appDescription={appDescription}
+                  appLogoUrl={appLogoUrl}
                 />
                 <div className="w-full mt-4">
                   <ChatInput
@@ -87,6 +97,8 @@ export function ChatContainer() {
                     messages={messages}
                     isStreamingEnabled={isStreamingEnabled}
                     onStopStreaming={stopStreaming}
+                    onUpload={uploadFile}
+                    hasUploadConfig={hasUploadConfig}
                     transparent
                   />
                 </div>
@@ -117,6 +129,8 @@ export function ChatContainer() {
               messages={messages}
               isStreamingEnabled={isStreamingEnabled}
               onStopStreaming={stopStreaming}
+              onUpload={uploadFile}
+              hasUploadConfig={hasUploadConfig}
             />
           )}
 
@@ -132,23 +146,36 @@ export function ChatContainer() {
   );
 }
 
-function EmptyState({ onOpenSettings, isExternal }: { onOpenSettings: () => void; isExternal?: boolean }) {
+function EmptyState({ onOpenSettings, isExternal, appName, appDescription, appLogoUrl }: { 
+  onOpenSettings: () => void; 
+  isExternal?: boolean;
+  appName: string;
+  appDescription: string;
+  appLogoUrl?: string;
+}) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary volt-glow-strong">
-        <Zap className="h-8 w-8" />
+      <div className={cn(
+        "mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary overflow-hidden",
+        appLogoUrl && "p-0 bg-transparent"
+      )}>
+        {appLogoUrl ? (
+          <img src={appLogoUrl} alt={appName} className="h-full w-full object-cover" />
+        ) : (
+          <Zap className="h-8 w-8" />
+        )}
       </div>
       <h2 className="mb-2 text-xl font-semibold tracking-tight">
-        Welcome to [App Name]
+        Welcome to {appName}
       </h2>
       <p className="mb-6 max-w-md text-sm text-muted-foreground">
-        [App Description]
+        {appDescription}
       </p>
       {!isExternal && (
         <div className="flex gap-3">
           <button
             onClick={onOpenSettings}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium transition-all hover:border-primary/50 hover:volt-glow"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium transition-all hover:border-primary/50"
           >
             <Zap className="h-4 w-4 text-primary" />
             Configure Webhook
