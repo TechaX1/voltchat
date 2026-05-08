@@ -17,7 +17,7 @@ If no webhook is configured, the application runs in a "demo mode" with simulate
 *   **Backend Agnostic:** Connects to any service via a webhook.
 *   **Stateful UI:** Persists chat history and webhook configuration locally.
 *   **Demo Mode:** Fully functional UI even without a backend connected.
-*   **Streaming Responses:** Simulates a real-time streaming effect for incoming messages.
+*   **Real & Simulated Streaming:** Supports true real-time streaming (via `text/event-stream`) or simulated streaming for standard JSON backend endpoints.
 *   **Modern Stack:** Utilizes Vite for fast development and bundling, with a full TypeScript and React foundation.
 
 ## Configuration

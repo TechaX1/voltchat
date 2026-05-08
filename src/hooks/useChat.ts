@@ -221,26 +221,76 @@ export function useChat() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
   
-          const data = await response.json();
-          console.log('[useChat] Received data:', data);
-          const responseContent =
-            (typeof data.output === 'object' ? data.output?.response : data.output) ||
-            data.response ||
-            data.message ||
-            data.content ||
-            JSON.stringify(data);
-  
-          if (isStreamingEnabled) {
-            simulateStreaming(assistantMessageId, responseContent);
-          } else {
+          const contentType = response.headers.get('content-type') || '';
+
+          if (contentType.includes('application/json')) {
+            const data = await response.json();
+            console.log('[useChat] Received data:', data);
+            const responseContent =
+              (typeof data.output === 'object' ? data.output?.response : data.output) ||
+              data.response ||
+              data.message ||
+              data.content ||
+              JSON.stringify(data);
+    
+            if (isStreamingEnabled) {
+              simulateStreaming(assistantMessageId, responseContent);
+            } else {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, content: responseContent, status: 'complete' }
+                    : m
+                )
+              );
+              setIsLoading(false);
+            }
+          } else if (response.body) {
+            // REAL Streaming
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let done = false;
+            let fullContent = '';
+
+            // Update status to streaming
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMessageId
-                  ? { ...m, content: responseContent, status: 'complete' }
+                  ? { ...m, status: 'streaming' }
+                  : m
+              )
+            );
+
+            while (!done) {
+              const { value, done: readerDone } = await reader.read();
+              done = readerDone;
+              if (value) {
+                const chunk = decoder.decode(value, { stream: true });
+                fullContent += chunk;
+                
+                if (isStreamingEnabled) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMessageId
+                        ? { ...m, content: fullContent }
+                        : m
+                    )
+                  );
+                }
+              }
+            }
+            
+            // Mark as complete and update final content
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: fullContent, status: 'complete' }
                   : m
               )
             );
             setIsLoading(false);
+          } else {
+            throw new Error('Empty response from server');
           }
         } catch (error) {
           console.error('[useChat] Send message error:', error);
