@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, WebhookConfig } from '@/types/chat';
+import { Message, WebhookConfig, Attachment } from '@/types/chat';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
@@ -150,8 +150,9 @@ export function useChat() {
     );
   
     const sendMessage = useCallback(
-      async (content: string) => {
-        if (!content.trim() || isLoading) return;
+      async (content: string, attachments?: Attachment[]) => {
+        const hasAttachments = attachments && attachments.length > 0;
+        if ((!content.trim() && !hasAttachments) || isLoading) return;
   
         setIsLoading(true);
         const userMessage: Message = {
@@ -160,6 +161,7 @@ export function useChat() {
           content: content.trim(),
           timestamp: new Date(),
           status: 'complete',
+          attachments,
         };
   
         setMessages((prev) => [...prev, userMessage]);
@@ -178,7 +180,7 @@ export function useChat() {
         try {
           if (!webhookConfig.url) {
             // Demo mode - simulate a response
-            const demoResponse = getDemoResponse(content);
+            const demoResponse = getDemoResponse(content, attachments);
             setTimeout(() => {
               if (isStreamingEnabled) {
                 simulateStreaming(assistantMessageId, demoResponse);
@@ -199,7 +201,8 @@ export function useChat() {
           console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
             message: content.trim(),
             sessionId,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            attachments
           });
 
           const response = await fetch(webhookConfig.url, {
@@ -212,6 +215,7 @@ export function useChat() {
               message: content.trim(),
               timestamp: new Date().toISOString(),
               sessionId,
+              attachments: attachments || [],
             }),
           });
 
@@ -326,11 +330,18 @@ export function useChat() {
 
     const uploadFile = useCallback(async (file: File) => {
       if (!ENV_UPLOAD_URL) {
-        console.warn('VITE_UPLOAD_URL is not configured');
-        return { success: false, message: 'Upload URL not configured' };
+        console.log(`[useChat] Simulated mock upload for: ${file.name}`);
+        // Simulate a short delay
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        return {
+          success: true,
+          data: {
+            status: 'success',
+            file_id: `file_mock_${generateId()}`,
+          }
+        };
       }
 
-      setIsLoading(true);
       try {
         console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
         const formData = new FormData();
@@ -352,32 +363,11 @@ export function useChat() {
 
         const data = await response.json();
         console.log('[useChat] Upload success data:', data);
-        
-        // Add a system message about the upload
-        const systemMessage: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: `Successfully uploaded file: **${file.name}**`,
-          timestamp: new Date(),
-          status: 'complete',
-        };
-        setMessages(prev => [...prev, systemMessage]);
-
         return { success: true, data };
       } catch (error) {
         console.error('[useChat] Upload error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-        const errorMsg: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: `Error uploading file: ${errorMessage}`,
-          timestamp: new Date(),
-          status: 'error',
-        };
-        setMessages(prev => [...prev, errorMsg]);
         return { success: false, message: errorMessage };
-      } finally {
-        setIsLoading(false);
       }
     }, [ENV_UPLOAD_URL, ENV_API_TOKEN]);
   			
@@ -393,13 +383,18 @@ export function useChat() {
       retryLastMessage,
       stopStreaming,
       uploadFile,
-      hasUploadConfig: !!ENV_UPLOAD_URL && ENV_ENABLE_UPLOADS,
+      hasUploadConfig: ENV_ENABLE_UPLOADS,
       appName: ENV_APP_NAME,
       appDescription: ENV_APP_DESCRIPTION,
       appLogoUrl: ENV_APP_LOGO_URL,
     };
   }
-function getDemoResponse(input: string): string {
+function getDemoResponse(input: string, attachments?: Attachment[]): string {
+  if (attachments && attachments.length > 0) {
+    const names = attachments.map(a => `**${a.name}** (${a.type})`).join(', ');
+    return `I received the following file(s) in demo mode: ${names}.\n\nHow can I help you analyze them?`;
+  }
+
   const responses = [
     "I'm VoltChat running in demo mode. Configure a webhook URL to connect to your AI backend.",
     "This is a simulated response. Your message was received instantly — that's the VoltChat difference.",

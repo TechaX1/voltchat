@@ -1,4 +1,114 @@
-import { Message } from '@/types/chat';
+import { Message, Attachment } from '@/types/chat';
+import { FileText, FileSpreadsheet, FileCode, Image as ImageIcon, File } from 'lucide-react';
+
+function getFileTypeInfo(fileName: string) {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  
+  if (['csv', 'xlsx', 'xls', 'ods'].includes(ext)) {
+    return {
+      type: 'Spreadsheet',
+      color: 'bg-green-600 dark:bg-green-600',
+      icon: FileSpreadsheet,
+    };
+  }
+  
+  const codeExtensions: Record<string, string> = {
+    py: 'Python',
+    js: 'JavaScript',
+    jsx: 'JavaScript React',
+    ts: 'TypeScript',
+    tsx: 'TypeScript React',
+    go: 'Go',
+    rs: 'Rust',
+    cpp: 'C++',
+    c: 'C',
+    h: 'C Header',
+    cs: 'C#',
+    java: 'Java',
+    rb: 'Ruby',
+    php: 'PHP',
+    html: 'HTML',
+    css: 'CSS',
+    json: 'JSON',
+    yaml: 'YAML',
+    yml: 'YAML',
+    md: 'Markdown',
+    sh: 'Shell Script',
+    bat: 'Batch File',
+    ps1: 'PowerShell',
+    sql: 'SQL'
+  };
+  
+  if (codeExtensions[ext]) {
+    return {
+      type: codeExtensions[ext],
+      color: 'bg-zinc-500 dark:bg-zinc-600',
+      icon: FileCode,
+    };
+  }
+  
+  if (ext === 'pdf') {
+    return {
+      type: 'PDF',
+      color: 'bg-red-500 dark:bg-red-600',
+      icon: FileText,
+    };
+  }
+  
+  if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) {
+    return {
+      type: 'Document',
+      color: 'bg-blue-600 dark:bg-blue-600',
+      icon: FileText,
+    };
+  }
+  
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
+    return {
+      type: 'Image',
+      color: 'bg-cyan-500 dark:bg-cyan-600',
+      icon: ImageIcon,
+    };
+  }
+  
+  return {
+    type: ext.toUpperCase() || 'File',
+    color: 'bg-slate-500 dark:bg-slate-600',
+    icon: File,
+  };
+}
+
+function MessageAttachmentCard({ attachment, isUser }: { attachment: Attachment; isUser: boolean }) {
+  const fileInfo = getFileTypeInfo(attachment.name);
+  const Icon = fileInfo.icon;
+  
+  return (
+    <div className={cn(
+      "flex items-center gap-2.5 rounded-xl p-2 w-[180px] max-w-[180px] shrink-0 border",
+      isUser 
+        ? "bg-primary-foreground/10 border-primary-foreground/15 text-primary-foreground"
+        : "bg-secondary/25 border-border/40 text-foreground"
+    )}>
+      <div className={cn(
+        "w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm",
+        fileInfo.color
+      )}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="text-xs font-semibold truncate leading-tight">
+          {attachment.name}
+        </span>
+        <span className={cn(
+          "text-[10px] truncate leading-normal mt-0.5",
+          isUser ? "text-primary-foreground/75" : "text-muted-foreground"
+        )}>
+          {fileInfo.type}
+        </span>
+      </div>
+    </div>
+  );
+}
 import { cn } from '@/lib/utils';
 import { AlertCircle, RotateCcw, Clipboard, Check, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -63,24 +173,42 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
       >
         {/* Message content */}
         {isUser ? (
-          <div
-            className={cn(
-              'text-sm leading-relaxed whitespace-pre-wrap break-words'
+          <div className="flex flex-col gap-2">
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-1">
+                {message.attachments.map((att, i) => (
+                  <MessageAttachmentCard key={i} attachment={att} isUser={true} />
+                ))}
+              </div>
             )}
-          >
-            {message.content}
+            <div
+              className={cn(
+                'text-sm leading-relaxed whitespace-pre-wrap break-words'
+              )}
+            >
+              {message.content}
+            </div>
           </div>
         ) : (
-          <div
-            className={cn(
-              'prose dark:prose-invert prose-sm max-w-none'
+          <div className="flex flex-col gap-2">
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-1">
+                {message.attachments.map((att, i) => (
+                  <MessageAttachmentCard key={i} attachment={att} isUser={false} />
+                ))}
+              </div>
             )}
-          >
-            {message.content ? (
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            ) : isStreaming ? (
-              <LoadingDots />
-            ) : null}
+            <div
+              className={cn(
+                'prose dark:prose-invert prose-sm max-w-none'
+              )}
+            >
+              {message.content ? (
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              ) : isStreaming ? (
+                <LoadingDots />
+              ) : null}
+            </div>
           </div>
         )}
 
