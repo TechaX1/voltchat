@@ -80,314 +80,315 @@ export function useChat() {
 
 
 
-    const clearMessages = useCallback(() => {
-      setMessages([]);
-      localStorage.removeItem(MESSAGES_STORAGE_KEY);
-      const newSessionId = generateId();
-      sessionStorage.setItem(SESSION_ID_STORAGE_KEY, newSessionId);
-      setSessionId(newSessionId);
-    }, []);
-  
-    const updateWebhookUrl = useCallback((url: string) => {
-      if (ENV_WEBHOOK_URL) return; // Prevent manual updates if env var is set
-      const trimmedUrl = url.trim();
-      localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
-      setWebhookConfig({
-        url: trimmedUrl,
-        isConnected: trimmedUrl.length > 0,
-        isExternal: false,
-      });
-      clearMessages();
-    }, [clearMessages, ENV_WEBHOOK_URL]);
-  
-    const toggleStreaming = useCallback(() => {
-      setIsStreamingEnabled((prev) => !prev);
-    }, []);
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    localStorage.removeItem(MESSAGES_STORAGE_KEY);
+    const newSessionId = generateId();
+    sessionStorage.setItem(SESSION_ID_STORAGE_KEY, newSessionId);
+    setSessionId(newSessionId);
+  }, []);
 
-    const stopStreaming = useCallback(() => {
-      if (streamCleanupRef.current) {
-        streamCleanupRef.current();
-        streamCleanupRef.current = null;
-      }
-      setMessages(prev => prev.map(m => m.status === 'streaming' ? { ...m, status: 'complete' } : m));
-      setIsLoading(false);
-    }, []);
-  
-    const simulateStreaming = useCallback(
-      (messageId: string, fullContent: string) => {
-        let currentIndex = 0;
-        const chunkSize = 2 + Math.floor(Math.random() * 3); // 2-4 chars at a time
-        const baseDelay = 20; // ms between chunks
-  
-        const streamInterval = setInterval(() => {
-          currentIndex += chunkSize;
-  
-          if (currentIndex >= fullContent.length) {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === messageId
-                  ? { ...m, content: fullContent, status: 'complete' }
-                  : m
-              )
-            );
-            clearInterval(streamInterval);
-            setIsLoading(false);
-            streamCleanupRef.current = null;
-          } else {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === messageId
-                  ? { ...m, content: fullContent.slice(0, currentIndex) }
-                  : m
-              )
-            );
-          }
-        }, baseDelay + Math.random() * 15);
-  
-        streamCleanupRef.current = () => clearInterval(streamInterval);
-      },
-      []
-    );
-  
-    const sendMessage = useCallback(
-      async (content: string, attachments?: Attachment[]) => {
-        const hasAttachments = attachments && attachments.length > 0;
-        if ((!content.trim() && !hasAttachments) || isLoading) return;
-  
-        setIsLoading(true);
-        const userMessage: Message = {
-          id: generateId(),
-          role: 'user',
-          content: content.trim(),
-          timestamp: new Date(),
-          status: 'complete',
-          attachments,
-        };
-  
-        setMessages((prev) => [...prev, userMessage]);
-  
-        const assistantMessageId = generateId();
-        const placeholderMessage: Message = {
-          id: assistantMessageId,
-          role: 'assistant',
-          content: '',
-          timestamp: new Date(),
-          status: isStreamingEnabled ? 'streaming' : 'complete',
-        };
-  
-        setMessages((prev) => [...prev, placeholderMessage]);
-  
-        try {
-          if (!webhookConfig.url) {
-            // Demo mode - simulate a response
-            const demoResponse = getDemoResponse(content, attachments);
-            setTimeout(() => {
-              if (isStreamingEnabled) {
-                simulateStreaming(assistantMessageId, demoResponse);
-              } else {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMessageId
-                      ? { ...m, content: demoResponse, status: 'complete' }
-                      : m
-                  )
-                );
-                setIsLoading(false);
-              }
-            }, 300);
-            return;
-          }
-  
-          console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
-            message: content.trim(),
-            sessionId,
-            timestamp: new Date().toISOString(),
-            attachments
-          });
+  const updateWebhookUrl = useCallback((url: string) => {
+    if (ENV_WEBHOOK_URL) return; // Prevent manual updates if env var is set
+    const trimmedUrl = url.trim();
+    localStorage.setItem(WEBHOOK_STORAGE_KEY, trimmedUrl);
+    setWebhookConfig({
+      url: trimmedUrl,
+      isConnected: trimmedUrl.length > 0,
+      isExternal: false,
+    });
+    clearMessages();
+  }, [clearMessages, ENV_WEBHOOK_URL]);
 
-          const response = await fetch(webhookConfig.url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
-            },
-            body: JSON.stringify({
-              message: content.trim(),
-              timestamp: new Date().toISOString(),
-              sessionId,
-              attachments: attachments || [],
-            }),
-          });
+  const toggleStreaming = useCallback(() => {
+    setIsStreamingEnabled((prev) => !prev);
+  }, []);
 
-          console.log(`[useChat] Response status: ${response.status} ${response.statusText}`);
-  
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-  
-          const contentType = response.headers.get('content-type') || '';
+  const stopStreaming = useCallback(() => {
+    if (streamCleanupRef.current) {
+      streamCleanupRef.current();
+      streamCleanupRef.current = null;
+    }
+    setMessages(prev => prev.map(m => m.status === 'streaming' ? { ...m, status: 'complete' } : m));
+    setIsLoading(false);
+  }, []);
 
-          if (contentType.includes('application/json')) {
-            const data = await response.json();
-            console.log('[useChat] Received data:', data);
-            const responseContent =
-              (typeof data.output === 'object' ? data.output?.response : data.output) ||
-              data.response ||
-              data.message ||
-              data.content ||
-              JSON.stringify(data);
-    
+  const simulateStreaming = useCallback(
+    (messageId: string, fullContent: string) => {
+      let currentIndex = 0;
+      const chunkSize = 2 + Math.floor(Math.random() * 3); // 2-4 chars at a time
+      const baseDelay = 20; // ms between chunks
+
+      const streamInterval = setInterval(() => {
+        currentIndex += chunkSize;
+
+        if (currentIndex >= fullContent.length) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? { ...m, content: fullContent, status: 'complete' }
+                : m
+            )
+          );
+          clearInterval(streamInterval);
+          setIsLoading(false);
+          streamCleanupRef.current = null;
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? { ...m, content: fullContent.slice(0, currentIndex) }
+                : m
+            )
+          );
+        }
+      }, baseDelay + Math.random() * 15);
+
+      streamCleanupRef.current = () => clearInterval(streamInterval);
+    },
+    []
+  );
+
+  const sendMessage = useCallback(
+    async (content: string, attachments?: Attachment[]) => {
+      const hasAttachments = attachments && attachments.length > 0;
+      if ((!content.trim() && !hasAttachments) || isLoading) return;
+
+      setIsLoading(true);
+      const userMessage: Message = {
+        id: generateId(),
+        role: 'user',
+        content: content.trim(),
+        timestamp: new Date(),
+        status: 'complete',
+        attachments,
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      const assistantMessageId = generateId();
+      const placeholderMessage: Message = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        status: isStreamingEnabled ? 'streaming' : 'complete',
+      };
+
+      setMessages((prev) => [...prev, placeholderMessage]);
+
+      try {
+        if (!webhookConfig.url) {
+          // Demo mode - simulate a response
+          const demoResponse = getDemoResponse(content, attachments);
+          setTimeout(() => {
             if (isStreamingEnabled) {
-              simulateStreaming(assistantMessageId, responseContent);
+              simulateStreaming(assistantMessageId, demoResponse);
             } else {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMessageId
-                    ? { ...m, content: responseContent, status: 'complete' }
+                    ? { ...m, content: demoResponse, status: 'complete' }
                     : m
                 )
               );
               setIsLoading(false);
             }
-          } else if (response.body) {
-            // REAL Streaming
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let done = false;
-            let fullContent = '';
-
-            // Update status to streaming
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId
-                  ? { ...m, status: 'streaming' }
-                  : m
-              )
-            );
-
-            while (!done) {
-              const { value, done: readerDone } = await reader.read();
-              done = readerDone;
-              if (value) {
-                const chunk = decoder.decode(value, { stream: true });
-                fullContent += chunk;
-                
-                if (isStreamingEnabled) {
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMessageId
-                        ? { ...m, content: fullContent }
-                        : m
-                    )
-                  );
-                }
-              }
-            }
-            
-            // Mark as complete and update final content
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId
-                  ? { ...m, content: fullContent, status: 'complete' }
-                  : m
-              )
-            );
-            setIsLoading(false);
-          } else {
-            throw new Error('Empty response from server');
-          }
-        } catch (error) {
-          console.error('[useChat] Send message error (falling back to faked/demo response):', error);
-          
-          const demoResponse = getDemoResponse(content, attachments);
-          if (isStreamingEnabled) {
-            simulateStreaming(assistantMessageId, demoResponse);
-          } else {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId
-                  ? { ...m, content: demoResponse, status: 'complete' }
-                  : m
-              )
-            );
-            setIsLoading(false);
-          }
+          }, 300);
+          return;
         }
-      },
-      [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled]
-    );
-  
-    const retryLastMessage = useCallback(() => {
-      const lastUserMessage = [...messages]
-        .reverse()
-        .find((m) => m.role === 'user');
-      if (lastUserMessage) {
-        setMessages((prev) => prev.slice(0, -1));
-        sendMessage(lastUserMessage.content);
-      }
-    }, [messages, sendMessage]);
 
-    const uploadFile = useCallback(async (file: File) => {
-      if (!ENV_UPLOAD_URL) {
-        console.log(`[useChat] Simulated mock upload for: ${file.name}`);
-        // Simulate a short delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return {
-          success: true,
-          data: {
-            status: 'success',
-            file_id: `file_mock_${generateId()}`,
-          }
-        };
-      }
-
-      try {
-        console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(ENV_UPLOAD_URL, {
-          method: 'POST',
-          headers: {
-            ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
-          },
-          body: formData,
+        console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
+          message: content.trim(),
+          sessionId,
+          timestamp: new Date().toISOString(),
+          attachments
         });
 
-        console.log(`[useChat] Upload response status: ${response.status}`);
+        const response = await fetch(webhookConfig.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
+          },
+          body: JSON.stringify({
+            message: content.trim(),
+            timestamp: new Date().toISOString(),
+            sessionId,
+            attachments: attachments || [],
+          }),
+        });
+
+        console.log(`[useChat] Response status: ${response.status} ${response.statusText}`);
 
         if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        console.log('[useChat] Upload success data:', data);
-        return { success: true, data };
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          console.log('[useChat] Received data:', data);
+          const responseContent =
+            (typeof data.output === 'object' ? data.output?.response : data.output) ||
+            data.response ||
+            data.message ||
+            data.content ||
+            JSON.stringify(data);
+
+          if (isStreamingEnabled) {
+            simulateStreaming(assistantMessageId, responseContent);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: responseContent, status: 'complete' }
+                  : m
+              )
+            );
+            setIsLoading(false);
+          }
+        } else if (response.body) {
+          // REAL Streaming
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
+          let done = false;
+          let fullContent = '';
+
+          // Update status to streaming
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMessageId
+                ? { ...m, status: 'streaming' }
+                : m
+            )
+          );
+
+          while (!done) {
+            const { value, done: readerDone } = await reader.read();
+            done = readerDone;
+            if (value) {
+              const chunk = decoder.decode(value, { stream: true });
+              fullContent += chunk;
+
+              if (isStreamingEnabled) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessageId
+                      ? { ...m, content: fullContent }
+                      : m
+                  )
+                );
+              }
+            }
+          }
+
+          // Mark as complete and update final content
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMessageId
+                ? { ...m, content: fullContent, status: 'complete' }
+                : m
+            )
+          );
+          setIsLoading(false);
+        } else {
+          throw new Error('Empty response from server');
+        }
       } catch (error) {
-        console.error('[useChat] Upload error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-        return { success: false, message: errorMessage };
+        console.error('[useChat] Send message error:', error);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Connection failed';
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? {
+                ...m,
+                content: `Error: ${errorMessage}. Check your webhook URL and try again.`,
+                status: 'error',
+              }
+              : m
+          )
+        );
+        setIsLoading(false);
       }
-    }, [ENV_UPLOAD_URL, ENV_API_TOKEN]);
-  			
-    return {
-      messages,
-      isLoading,
-      webhookConfig,
-      isStreamingEnabled,
-      sendMessage,
-      updateWebhookUrl,
-      toggleStreaming,
-      clearMessages,
-      retryLastMessage,
-      stopStreaming,
-      uploadFile,
-      hasUploadConfig: ENV_ENABLE_UPLOADS,
-      appName: ENV_APP_NAME,
-      appDescription: ENV_APP_DESCRIPTION,
-      appLogoUrl: ENV_APP_LOGO_URL,
-    };
-  }
+    },
+    [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled]
+  );
+
+  const retryLastMessage = useCallback(() => {
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((m) => m.role === 'user');
+    if (lastUserMessage) {
+      setMessages((prev) => prev.slice(0, -1));
+      sendMessage(lastUserMessage.content);
+    }
+  }, [messages, sendMessage]);
+
+  const uploadFile = useCallback(async (file: File) => {
+    if (!ENV_UPLOAD_URL) {
+      console.log(`[useChat] Simulated mock upload for: ${file.name}`);
+      // Simulate a short delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return {
+        success: true,
+        data: {
+          status: 'success',
+          file_id: `file_mock_${generateId()}`,
+        }
+      };
+    }
+
+    try {
+      console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(ENV_UPLOAD_URL, {
+        method: 'POST',
+        headers: {
+          ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
+        },
+        body: formData,
+      });
+
+      console.log(`[useChat] Upload response status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('[useChat] Upload success data:', data);
+      return { success: true, data };
+    } catch (error) {
+      console.error('[useChat] Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      return { success: false, message: errorMessage };
+    }
+  }, [ENV_UPLOAD_URL, ENV_API_TOKEN]);
+
+  return {
+    messages,
+    isLoading,
+    webhookConfig,
+    isStreamingEnabled,
+    sendMessage,
+    updateWebhookUrl,
+    toggleStreaming,
+    clearMessages,
+    retryLastMessage,
+    stopStreaming,
+    uploadFile,
+    hasUploadConfig: ENV_ENABLE_UPLOADS,
+    appName: ENV_APP_NAME,
+    appDescription: ENV_APP_DESCRIPTION,
+    appLogoUrl: ENV_APP_LOGO_URL,
+  };
+}
 function getDemoResponse(input: string, attachments?: Attachment[]): string {
   if (attachments && attachments.length > 0) {
     const names = attachments.map(a => `**${a.name}** (${a.type})`).join(', ');
@@ -395,6 +396,7 @@ function getDemoResponse(input: string, attachments?: Attachment[]): string {
   }
 
   const normalizedInput = input.toLowerCase();
+
   if (
     normalizedInput.includes('python') ||
     normalizedInput.includes('snake') ||
@@ -414,7 +416,53 @@ screen.title("Snake Game")
 screen.bgcolor("black")
 screen.setup(width=600, height=600)
 screen.tracer(0)
+
+# Snake head
+head = turtle.Turtle()
+head.speed(0)
+head.shape("square")
+head.color("white")
+head.penup()
+head.goto(0,0)
+head.direction = "stop"
+
+# Snake food
+food = turtle.Turtle()
+food.speed(0)
+food.shape("circle")
+food.color("red")
+food.penup()
+food.goto(0,100)
+
+segments = []
+
+# Pen
+pen = turtle.Turtle()
+pen.speed(0)
+pen.shape("square")
+pen.color("white")
+pen.penup()
+pen.hideturtle()
+pen.goto(0, 260)
+pen.write("Score: 0  High Score: 0", align="center", font=("Courier", 24, "normal"))
 \`\`\``;
+  }
+
+  if (
+    normalizedInput.includes('table') ||
+    normalizedInput.includes('compare') ||
+    normalizedInput.includes('markdown') ||
+    normalizedInput.includes('fruit')
+  ) {
+    return `Here is a markdown table comparing different fruits:
+
+| Fruit | Color | Taste | Price |
+| :--- | :--- | :--- | :--- |
+| **Apple** | Red / Green | Sweet / Tart | $1.20 / lb |
+| **Orange** | Orange | Citrusy / Sweet | $0.90 / lb |
+| **Banana** | Yellow | Sweet / Creamy | $0.60 / lb |
+
+In Javascript, you can declare a fruit variable like this: \`const fruit = "apple"\`.`;
   }
 
   const responses = [

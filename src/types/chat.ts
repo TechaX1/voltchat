@@ -9,6 +9,14 @@ export interface Attachment {
   url?: string;
 }
 
+export type ToolCallStatus = 'running' | 'done' | 'error';
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  status: ToolCallStatus;
+}
+
 export interface Message {
   id: string;
   role: MessageRole;
@@ -16,6 +24,7 @@ export interface Message {
   timestamp: Date;
   status: MessageStatus;
   attachments?: Attachment[];
+  toolCalls?: ToolCall[];
 }
 
 export interface WebhookConfig {
