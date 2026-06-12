@@ -6,6 +6,7 @@ import { ChatHeader } from './ChatHeader';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { WebhookSettings } from './WebhookSettings';
+import { AgUIStateDisplay } from './AgUIStateDisplay';
 import { Sidebar } from '../Sidebar';
 import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,11 +19,16 @@ export function ChatContainer() {
     isStreamingEnabled,
     sendMessage,
     updateWebhookUrl,
+    updateAgUIUrl,
     toggleStreaming,
     clearMessages,
     retryLastMessage,
     stopStreaming,
     uploadFile,
+    toolCalls,
+    reasoning,
+    agentState,
+    currentStep,
     hasUploadConfig,
     appName,
     appDescription,
@@ -39,16 +45,10 @@ export function ChatContainer() {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Auto-scroll to bottom on new messages, but only if user is near the bottom
+  // Auto-scroll to bottom on new messages and during streaming
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 200;
-      if (isNearBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -121,6 +121,13 @@ export function ChatContainer() {
             )}
           </main>
 
+          {/* AG-UI State Display */}
+          {agentState && (
+            <div className="absolute bottom-20 left-4 right-4 z-10">
+              <AgUIStateDisplay state={agentState} currentStep={currentStep} />
+            </div>
+          )}
+
           {messages.length > 0 && (
             <div className="absolute bottom-0 left-0 right-0 z-10">
               <ChatInput
@@ -141,6 +148,8 @@ export function ChatContainer() {
             onClose={() => setIsSettingsOpen(false)}
             webhookUrl={webhookConfig.url}
             onUpdateUrl={updateWebhookUrl}
+            agUIUrl={webhookConfig.agUIUrl}
+            onUpdateAgUIUrl={updateAgUIUrl}
           />
         </div>
       </div>

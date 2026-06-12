@@ -25,3 +25,6 @@ dist-ssr
 
 # docker compose local testing files
 docker-compose.override.yml
+.commandcode/
+.agents/skills/
+skills-lock.*

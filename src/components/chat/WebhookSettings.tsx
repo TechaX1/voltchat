@@ -10,6 +10,8 @@ interface WebhookSettingsProps {
   onClose: () => void;
   webhookUrl: string;
   onUpdateUrl: (url: string) => void;
+  agUIUrl?: string;
+  onUpdateAgUIUrl?: (url: string) => void;
 }
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -19,13 +21,17 @@ export function WebhookSettings({
   onClose,
   webhookUrl,
   onUpdateUrl,
+  agUIUrl = '',
+  onUpdateAgUIUrl,
 }: WebhookSettingsProps) {
   const [inputUrl, setInputUrl] = useState(webhookUrl);
+  const [inputAgUIUrl, setInputAgUIUrl] = useState(agUIUrl);
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const [testError, setTestError] = useState('');
 
   const handleSave = () => {
     onUpdateUrl(inputUrl);
+    onUpdateAgUIUrl?.(inputAgUIUrl);
     onClose();
   };
 
@@ -64,6 +70,8 @@ export function WebhookSettings({
   const handleClear = () => {
     setInputUrl('');
     onUpdateUrl('');
+    setInputAgUIUrl('');
+    onUpdateAgUIUrl?.('');
     setTestStatus('idle');
     setTestError('');
   };
@@ -125,6 +133,23 @@ export function WebhookSettings({
             />
             <p className="text-xs text-muted-foreground">
               VoltChat will POST messages to this endpoint as JSON.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="agui-url" className="text-sm font-medium">
+              AG-UI URL <span className="text-muted-foreground text-xs">(Optional)</span>
+            </Label>
+            <Input
+              id="agui-url"
+              type="url"
+              value={inputAgUIUrl}
+              onChange={(e) => setInputAgUIUrl(e.target.value)}
+              placeholder="http://localhost:3001/agent"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              AG-UI protocol endpoint for structured agent communication with tool calls, state sync, and reasoning.
             </p>
           </div>
 

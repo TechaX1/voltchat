@@ -10,6 +10,8 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { useState } from 'react';
 import { LoadingDots } from './LoadingDots';
+import { AgUIToolCall } from './AgUIToolCall';
+import { AgUIReasoning } from './AgUIReasoning';
 
 interface ChatMessageProps {
   message: Message;
@@ -82,6 +84,29 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
               <LoadingDots />
             ) : null}
           </div>
+        )}
+
+        {/* AG-UI Extensions */}
+        {!isUser && (
+          <>
+            {/* Tool Calls */}
+            {message.toolCalls && message.toolCalls.length > 0 && (
+              <div className="mt-3">
+                {message.toolCalls.map((toolCall) => (
+                  <AgUIToolCall key={toolCall.toolCallId} toolCall={toolCall} />
+                ))}
+              </div>
+            )}
+
+            {/* Reasoning Blocks */}
+            {message.reasoning && message.reasoning.length > 0 && (
+              <div className="mt-3">
+                {message.reasoning.map((reasoningBlock) => (
+                  <AgUIReasoning key={reasoningBlock.messageId} reasoning={reasoningBlock} />
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Error state with retry */}
