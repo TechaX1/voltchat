@@ -39,16 +39,19 @@ export function ChatContainer() {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Auto-scroll to bottom on new messages, but only if user is near the bottom
+  // Auto-scroll to bottom on new messages, or when the agent starts responding
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
+      const lastMessage = messages[messages.length - 1];
+      const justSent = lastMessage?.role === 'user';
       const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 200;
-      if (isNearBottom) {
+      
+      if (isNearBottom || justSent || isLoading) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   return (
     <TooltipProvider delayDuration={200}>
