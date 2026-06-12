@@ -119,8 +119,8 @@ import {
 } from "@/components/ui/tooltip";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
 import { useState } from 'react';
 import { LoadingDots } from './LoadingDots';
 
@@ -162,38 +162,37 @@ function CodeBlock({ language, value }: CodeBlockProps) {
   };
 
   return (
-    <div className="my-4 rounded-xl overflow-hidden border border-zinc-800 bg-[#0d0d0d] text-zinc-100 shadow-md">
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800/80">
+    <div className="my-4 rounded-xl overflow-hidden text-zinc-100">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#282c34] border-b border-white/5">
         <div className="flex items-center gap-2 text-zinc-400 text-xs font-semibold">
           <Code className="h-3.5 w-3.5" />
-          <span className="text-zinc-200">{capitalizeLanguage(language)}</span>
+          <span className="text-zinc-300">{capitalizeLanguage(language)}</span>
         </div>
         <button
           onClick={handleCopy}
-          className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-zinc-200 transition-colors"
           title="Copy code"
         >
           {isCopied ? (
-            <Check className="h-3.5 w-3.5 text-green-500" />
+            <Check className="h-3.5 w-3.5 text-green-400" />
           ) : (
             <Copy className="h-3.5 w-3.5" />
           )}
         </button>
       </div>
-      <div className="overflow-x-auto text-sm">
-        <SyntaxHighlighter
-          style={vscDarkPlus}
-          language={language}
-          PreTag="div"
-          customStyle={{
-            margin: 0,
-            padding: '1rem',
-            background: 'transparent',
-          }}
-        >
-          {value}
-        </SyntaxHighlighter>
-      </div>
+      <SyntaxHighlighter
+        style={atomOneDark}
+        language={language}
+        PreTag="div"
+        customStyle={{
+          margin: 0,
+          padding: '1rem',
+          borderRadius: 0,
+          fontSize: '0.8125rem',
+        }}
+      >
+        {value}
+      </SyntaxHighlighter>
     </div>
   );
 }

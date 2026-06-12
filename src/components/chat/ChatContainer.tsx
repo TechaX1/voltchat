@@ -39,19 +39,18 @@ export function ChatContainer() {
     setIsSidebarOpen((prev) => !prev);
   };
 
-  // Auto-scroll to bottom on new messages, or when the agent starts responding
+  const prevMessageCountRef = useRef(0);
+
+  // Auto-scroll only when a new message is added (user sends or assistant placeholder appears).
+  // Does NOT re-scroll on streaming content updates, so the user can scroll up freely.
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const lastMessage = messages[messages.length - 1];
-      const justSent = lastMessage?.role === 'user';
-      const isNearBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 200;
-      
-      if (isNearBottom || justSent || isLoading) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
+    const count = messages.length;
+    if (count > prevMessageCountRef.current) {
+      prevMessageCountRef.current = count;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isLoading]);
+  }, [messages.length]);
+
 
   return (
     <TooltipProvider delayDuration={200}>
