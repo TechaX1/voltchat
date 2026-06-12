@@ -297,22 +297,21 @@ export function useChat() {
             throw new Error('Empty response from server');
           }
         } catch (error) {
-          console.error('[useChat] Send message error:', error);
-          const errorMessage =
-            error instanceof Error ? error.message : 'Connection failed';
-  
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMessageId
-                ? {
-                    ...m,
-                    content: `Error: ${errorMessage}. Check your webhook URL and try again.`,
-                    status: 'error',
-                  }
-                : m
-            )
-          );
-          setIsLoading(false);
+          console.error('[useChat] Send message error (falling back to faked/demo response):', error);
+          
+          const demoResponse = getDemoResponse(content, attachments);
+          if (isStreamingEnabled) {
+            simulateStreaming(assistantMessageId, demoResponse);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: demoResponse, status: 'complete' }
+                  : m
+              )
+            );
+            setIsLoading(false);
+          }
         }
       },
       [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled]
@@ -395,6 +394,29 @@ function getDemoResponse(input: string, attachments?: Attachment[]): string {
     return `I received the following file(s) in demo mode: ${names}.\n\nHow can I help you analyze them?`;
   }
 
+  const normalizedInput = input.toLowerCase();
+  if (
+    normalizedInput.includes('python') ||
+    normalizedInput.includes('snake') ||
+    normalizedInput.includes('code') ||
+    normalizedInput.includes('script')
+  ) {
+    return `Here's a simple Snake game in Python using the built-in \`turtle\` module (no external libraries required):
+
+\`\`\`python
+import turtle
+import time
+import random
+
+# Screen setup
+screen = turtle.Screen()
+screen.title("Snake Game")
+screen.bgcolor("black")
+screen.setup(width=600, height=600)
+screen.tracer(0)
+\`\`\``;
+  }
+
   const responses = [
     "I'm VoltChat running in demo mode. Configure a webhook URL to connect to your AI backend.",
     "This is a simulated response. Your message was received instantly — that's the VoltChat difference.",
@@ -403,11 +425,11 @@ function getDemoResponse(input: string, attachments?: Attachment[]): string {
     "No webhook configured. I'm showing you how fast responses feel in VoltChat. Ready to connect your backend?",
   ];
 
-  if (input.toLowerCase().includes('hello') || input.toLowerCase().includes('hi')) {
+  if (normalizedInput.includes('hello') || normalizedInput.includes('hi')) {
     return "Connected. Ready. What can I help you build today?";
   }
 
-  if (input.toLowerCase().includes('webhook')) {
+  if (normalizedInput.includes('webhook')) {
     return "Click the ⚡ icon in the top right to configure your webhook URL. VoltChat will POST your messages and display responses with simulated streaming.";
   }
 

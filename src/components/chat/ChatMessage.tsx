@@ -164,10 +164,10 @@ export function ChatMessage({ message, onRetry }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'relative max-w-[85%] md:max-w-[70%] rounded-3xl px-4 py-3',
+          'relative rounded-3xl px-4 py-3',
           isUser
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-transparent border-transparent',
+            ? 'max-w-[85%] md:max-w-[70%] bg-primary text-primary-foreground'
+            : 'w-full max-w-full bg-transparent border-transparent',
           isError && 'border-destructive/50 bg-destructive/10'
         )}
       >

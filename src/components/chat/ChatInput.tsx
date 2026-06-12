@@ -19,7 +19,7 @@ interface ChatInputProps {
   messages: Message[];
   isStreamingEnabled: boolean;
   onStopStreaming: () => void;
-  onUpload?: (file: File) => Promise<{ success: boolean; data?: any; message?: string }>;
+  onUpload?: (file: File) => Promise<{ success: boolean; data?: unknown; message?: string }>;
   hasUploadConfig?: boolean;
   transparent?: boolean;
 }
