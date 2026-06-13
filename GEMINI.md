@@ -66,3 +66,34 @@ The project uses `npm` for package management.
 
 *   Styling is done using **Tailwind CSS**.
 *   The project uses a pre-configured set of UI components from **shadcn-ui**, which are themselves built on Radix UI primitives.
+
+## Ported & Implemented Features (Recent 6 Commits)
+
+We have ported and expanded upon six critical frontend features from the `repo-reader` project:
+
+1. **Collapsible Tool Call List**
+   - Collapses tool call items when more than 3 are present. Displays the first 2 and a `+ N more tool calls` toggle.
+   - Real-time status indicators: amber pulsing for `running`, green for `done`, and red for `error`.
+   - Toggle chevron to expand individual tool execution detail boxes.
+
+2. **Advanced Code Blocks & GFM Tables**
+   - Renders code blocks with a borderless, curved container styled under the **Atom One Dark** theme.
+   - Header bar uses matching Atom backgrounds (`#282c34`) and features language labels and a copy button with direct feedback checkmarks.
+   - Integrated `remark-gfm` with `ReactMarkdown` to support markdown tables and strikethroughs natively.
+   - Custom inline code styles applied to any backtick content outside syntax-highlighted blocks.
+
+3. **One-Time Auto-Scrolling**
+   - Auto-scrolling to the bottom of the container triggers strictly once on message list expansion (when a user sends a message or when a streaming reply starts).
+   - Indefinite force-scrolling is disabled so users can scroll back up and read text/code while streaming is active.
+
+4. **Dynamic Simulated Upload Fallback**
+   - If the backend/upload server is unreachable or offline, the file upload mechanism switches dynamically to a **Simulated Upload** fallback.
+   - Displays attachment loaders, uploads mock file references, and lets you test attachments seamlessly.
+   - Limit of uploads is controlled by the `VITE_MAX_ATTACHMENTS` env flag.
+
+5. **`window.fetch.bind(window)` Integration**
+   - Configured `HttpAgent` in `useChat.ts` to bind fetch requests to window, preventing context-binding errors in several browsers.
+
+6. **Instant `treeVersion` Bumps**
+   - Refined event handling in `useChat.ts` to trigger a tree version bump upon `TOOL_CALL_END` for fast sidebar UI reactivity.
+

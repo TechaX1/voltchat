@@ -99,6 +99,33 @@ docker create --name tmp voltchat:dist; docker cp tmp:/dist ./dist; docker rm tm
 *   **`src/types`**: TypeScript type definitions.
 
 
+## Recent Improvements & Customizations
+
+VoltChat has been enhanced with advanced developer-focused features ported and adapted from the `repo-reader` project:
+
+### 1. Advanced Markdown & Code Blocks
+* **Syntax Highlighting**: Custom code blocks are rendered using `react-syntax-highlighter` under the **Atom One Dark** theme.
+* **Unified Borderless Code View**: Fenced code blocks no longer have boxy outer wrapper backgrounds or borders. They are styled seamlessly as a header bar (`#282c34`) and code panel.
+* **Easy Copying**: A dedicated Copy button appears in the upper right corner of code headers, giving immediate visual feedback (✓ checkmark) when clicked.
+* **Inline Code Custom Styling**: Inline code is styled with a subtle background (`bg-zinc-800/85 text-zinc-200`) and a compact monospace font size (`11px`).
+* **GitHub Flavored Markdown (GFM)**: Built-in GFM support via `remark-gfm` guarantees clean HTML tables, strikethrough, autolinks, and task lists.
+
+### 2. Collapsible Tool Call Log
+* When an agent invokes more than 3 tool runs, the UI consolidates the list into the first 2 items, showing a `+ N more tool calls` toggle button.
+* Includes status indication dots:
+  * **Amber pulsing** dot for `running` status.
+  * **Emerald green** dot for `done` status.
+  * **Red** dot for `error` status.
+* Collapsible detail chevron for each individual tool run.
+
+### 3. Smarter Auto-Scrolling
+* Auto-scrolling to the bottom occurs only once when a new message is sent by the user or when the assistant placeholder begins.
+* It does *not* force scroll down indefinitely during message streaming, allowing developers to scroll up and inspect code or logs freely during active generation.
+
+### 4. Robust Offline & File Upload Fallbacks
+* If file uploads are enabled but the backend/upload server is offline, VoltChat automatically switches to a graceful **Simulated/Mock Upload** fallback. This ensures the attachment queue UI, loader animations, and message submission can be thoroughly tested visually.
+* Uses `VITE_MAX_ATTACHMENTS` in the `.env` to enforce maximum files, alerting users with toast notifications if exceeded.
+
 ## Technologies Used
 
 This project is built with:
@@ -108,3 +135,6 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- remark-gfm (Markdown tables)
+- react-syntax-highlighter (Atom One Dark theme)
+
