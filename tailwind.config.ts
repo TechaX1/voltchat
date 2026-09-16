@@ -101,5 +101,8 @@ export default {
       },
     },
   },
+  // require() is intentional here: Tailwind v3 config plugins are CJS modules
+  // without bundled types, and this file is not part of the app bundle.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

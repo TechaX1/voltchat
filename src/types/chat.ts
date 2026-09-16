@@ -33,6 +33,19 @@ export interface WebhookConfig {
   isExternal?: boolean;
 }
 
+export interface UploadResponseData {
+  status?: string;
+  file_id?: string;
+  fileId?: string;
+  [key: string]: unknown;
+}
+
+export interface UploadResult {
+  success: boolean;
+  data?: UploadResponseData;
+  message?: string;
+}
+
 export interface ChatState {
   messages: Message[];
   isLoading: boolean;

@@ -1,5 +1,33 @@
+import { useState } from 'react';
 import { Message, Attachment } from '@/types/chat';
-import { FileText, FileSpreadsheet, FileCode, Image as ImageIcon, File } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  FileText,
+  FileSpreadsheet,
+  FileCode,
+  Image as ImageIcon,
+  File,
+  AlertCircle,
+  RotateCcw,
+  Clipboard,
+  Copy,
+  Code,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
+  ChevronRight,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
+import { LoadingDots } from './LoadingDots';
 
 function getFileTypeInfo(fileName: string) {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -109,21 +137,6 @@ function MessageAttachmentCard({ attachment, isUser }: { attachment: Attachment;
     </div>
   );
 }
-import { cn } from '@/lib/utils';
-import { AlertCircle, RotateCcw, Clipboard, Copy, Code, Check, ThumbsUp, ThumbsDown, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
-import { useState } from 'react';
-import { LoadingDots } from './LoadingDots';
-
 interface CodeBlockProps {
   language: string;
   value: string;

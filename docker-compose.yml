@@ -3,3 +3,8 @@ services:
     build: .
     container_name: voltchat  # <--- Remember this name!
     restart: always
+    # Publish the Nginx server (container :80) on host :8080 so a fresh
+    # clone works with just `docker compose up --build`.
+    # Local customization lives in docker-compose.override.yml (gitignored).
+    ports:
+      - "8080:80"

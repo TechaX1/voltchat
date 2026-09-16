@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local env overrides (tracked template is .env.example)
+.env
+
+# Canonical package manager is npm (package-lock.json); ignore bun lockfile
+bun.lockb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

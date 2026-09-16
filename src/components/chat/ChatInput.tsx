@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { StopCircle, Plus, Paperclip, Scan, Camera, Image, Lightbulb, Telescope, Globe, MoreHorizontal, ChevronRight, ArrowUp, FileText, FileSpreadsheet, FileCode, File, X, Mic, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Message, Attachment } from '@/types/chat';
+import { Message, Attachment, UploadResult } from '@/types/chat';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,7 @@ interface ChatInputProps {
   messages: Message[];
   isStreamingEnabled: boolean;
   onStopStreaming: () => void;
-  onUpload?: (file: File) => Promise<{ success: boolean; data?: unknown; message?: string }>;
+  onUpload?: (file: File) => Promise<UploadResult>;
   hasUploadConfig?: boolean;
   transparent?: boolean;
 }
@@ -237,7 +237,7 @@ export function ChatInput({
 
       onUpload(file).then((result) => {
         if (result.success) {
-          const fileId = (result.data && result.data.file_id) || `file_${Math.random().toString(36).substring(2, 9)}`;
+          const fileId = result.data?.file_id ?? result.data?.fileId ?? `file_${Math.random().toString(36).substring(2, 9)}`;
           setAttachments(prev => prev.map(att =>
             att.localId === localId
               ? { ...att, isUploading: false, fileId }

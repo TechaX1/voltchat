@@ -53,22 +53,33 @@ VITE_UPLOAD_URL=https://your-api.com/upload
 
 The project uses `npm` for package management.
 
-### Docker: build-only image (artifacts only)
+### Docker: multi-stage build (Vite build + Nginx serve)
 
-This repository includes a build-only `DOCKERFILE` which produces a minimal image containing the built static files at `/dist` and does not include any web server.
+The `Dockerfile` is a multi-stage image: Stage 1 builds the static site
+with Node 20 (`npm ci` + `npm run build`), Stage 2 serves `dist/` with
+Nginx on container port `80` (SPA fallback via `try_files ... /index.html`
+in `nginx.conf`).
 
-Build the image (PowerShell):
-
-```powershell
-docker build -t voltchat:dist .
-```
-
-After building, the image will contain the files at `/dist`. You can extract them or use a small server image to serve them if you need to run the app in a container:
+Run with Compose (PowerShell):
 
 ```powershell
-# extract dist from the image
-docker create --name tmp voltchat:dist; docker cp tmp:/dist ./dist; docker rm tmp
+docker compose up --build
+# app available at http://localhost:8080
 ```
+
+Or with plain Docker:
+
+```powershell
+docker build -t voltchat .
+docker run --rm -p 8080:80 voltchat
+```
+
+Notes:
+- Vite env vars (`VITE_*` from `.env`) are baked in at build time, so set
+  them before building.
+- `docker-compose.override.yml` is gitignored for local tweaks (e.g. mapping
+  a different host port). The base `docker-compose.yml` already publishes
+  `8080:80` so a fresh clone works without an override file.
 
 
 ### Setup Locally:

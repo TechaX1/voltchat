@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, WebhookConfig, Attachment } from '@/types/chat';
+import { Message, WebhookConfig, Attachment, UploadResponseData, UploadResult } from '@/types/chat';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
@@ -64,6 +64,8 @@ export function useChat() {
     if (savedStreaming !== null) {
       setIsStreamingEnabled(JSON.parse(savedStreaming));
     }
+    // ENV_WEBHOOK_URL is a static build-time value, so this stays mount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist messages to localStorage
@@ -315,7 +317,7 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled]
+    [webhookConfig.url, isLoading, simulateStreaming, sessionId, isStreamingEnabled, ENV_API_TOKEN]
   );
 
   const retryLastMessage = useCallback(() => {
@@ -328,7 +330,7 @@ export function useChat() {
     }
   }, [messages, sendMessage]);
 
-  const uploadFile = useCallback(async (file: File) => {
+  const uploadFile = useCallback(async (file: File): Promise<UploadResult> => {
     // If upload URL is not configured or we are in demo mode (no webhook URL), use simulated upload
     if (!ENV_UPLOAD_URL || !webhookConfig.url) {
       console.log(`[useChat] Simulated mock upload for: ${file.name}`);
@@ -362,7 +364,7 @@ export function useChat() {
         throw new Error(`Upload failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as UploadResponseData;
       console.log('[useChat] Upload success data:', data);
       return { success: true, data };
     } catch (error) {
