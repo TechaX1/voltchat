@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    strategy:
+      matrix:
+        node-version: [20, 22]
+        package-manager: ['npm', 'bun']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup bun
+        if: matrix.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install (npm)
+        if: matrix.package-manager == 'npm'
+        run: npm ci
+
+      - name: Install (bun)
+        if: matrix.package-manager == 'bun'
+        run: bun install
+
+      - name: Typecheck
+        run: ${{ matrix.package-manager == 'npm' && 'npm run typecheck' || 'bun run typecheck' }}
+
+      - name: Lint
+        run: ${{ matrix.package-manager == 'npm' && 'npm run lint' || 'bun run lint' }}
+
+      - name: Test
+        run: ${{ matrix.package-manager == 'npm' && 'npm run test' || 'bun run test' }}
+
+      - name: Build
+        run: ${{ matrix.package-manager == 'npm' && 'npm run build' || 'bun run build' }}

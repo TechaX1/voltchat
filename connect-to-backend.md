@@ -1,5 +1,9 @@
 # Connecting VoltChat to Your Backend
 
+> Template docs have moved: start at `docs/BACKEND_CONTRACT.md` (contract),
+> `docs/RECIPES.md` (copy-paste servers), `docs/THEMING.md` (branding).
+> This file stays as a quickstart.
+
 VoltChat is designed to be a "plug-and-play" frontend for any AI service. It communicates with your backend via standard HTTP POST requests.
 
 ## 1. Configuration

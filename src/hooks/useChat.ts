@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message, WebhookConfig, Attachment } from '@/types/chat';
+import { appConfig, isDemoMode } from '@/config';
+import { getDemoResponse } from '@/lib/backends/demo';
+import { buildChatPayload, extractJsonContent, postChat, uploadFileRequest } from '@/lib/backends/webhook';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
@@ -9,14 +12,7 @@ const STREAMING_ENABLED_KEY = 'voltchat-streaming-enabled';
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export function useChat() {
-  const ENV_WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL;
-  const ENV_API_TOKEN = import.meta.env.VITE_API_TOKEN;
-  const ENV_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL;
-  const ENV_APP_NAME = import.meta.env.VITE_APP_NAME || 'VoltChat';
-  const ENV_APP_DESCRIPTION = import.meta.env.VITE_APP_DESCRIPTION || 'A high-performance chat interface.';
-  const ENV_ENABLE_UPLOADS = import.meta.env.VITE_ENABLE_UPLOADS === 'true';
-  const ENV_APP_LOGO_URL = import.meta.env.VITE_APP_LOGO_URL || '';
-  const ENV_FAVICON_URL = import.meta.env.VITE_FAVICON_URL || '';
+  const ENV_WEBHOOK_URL = appConfig.webhookUrl;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +60,7 @@ export function useChat() {
     if (savedStreaming !== null) {
       setIsStreamingEnabled(JSON.parse(savedStreaming));
     }
-  }, []);
+  }, [ENV_WEBHOOK_URL]);
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -178,7 +174,7 @@ export function useChat() {
       setMessages((prev) => [...prev, placeholderMessage]);
 
       try {
-        if (!webhookConfig.url) {
+        if (isDemoMode(webhookConfig.url)) {
           // Demo mode - simulate a response
           const demoResponse = getDemoResponse(content, attachments);
           setTimeout(() => {
@@ -205,37 +201,18 @@ export function useChat() {
           attachments
         });
 
-        const response = await fetch(webhookConfig.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
-          },
-          body: JSON.stringify({
-            message: content.trim(),
-            timestamp: new Date().toISOString(),
-            sessionId,
-            attachments: attachments || [],
-          }),
-        });
-
-        console.log(`[useChat] Response status: ${response.status} ${response.statusText}`);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+        const response = await postChat(
+          buildChatPayload(content, sessionId, attachments || []),
+          webhookConfig.url,
+          appConfig.apiToken,
+        );
 
         const contentType = response.headers.get('content-type') || '';
 
         if (contentType.includes('application/json')) {
           const data = await response.json();
           console.log('[useChat] Received data:', data);
-          const responseContent =
-            (typeof data.output === 'object' ? data.output?.response : data.output) ||
-            data.response ||
-            data.message ||
-            data.content ||
-            JSON.stringify(data);
+          const responseContent = extractJsonContent(data);
 
           if (isStreamingEnabled) {
             simulateStreaming(assistantMessageId, responseContent);
@@ -329,10 +306,9 @@ export function useChat() {
   }, [messages, sendMessage]);
 
   const uploadFile = useCallback(async (file: File) => {
-    // If upload URL is not configured or we are in demo mode (no webhook URL), use simulated upload
-    if (!ENV_UPLOAD_URL || !webhookConfig.url) {
-      console.log(`[useChat] Simulated mock upload for: ${file.name}`);
-      // Simulate a short delay
+    // Demo backends always use simulated uploads so attachment UI stays testable.
+    if (isDemoMode(webhookConfig.url)) {
+      console.log(`[useChat] Demo-mode simulated upload for: ${file.name}`);
       await new Promise((resolve) => setTimeout(resolve, 800));
       return {
         success: true,
@@ -342,42 +318,8 @@ export function useChat() {
         }
       };
     }
-
-    try {
-      console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(ENV_UPLOAD_URL, {
-        method: 'POST',
-        headers: {
-          ...(ENV_API_TOKEN ? { 'Authorization': `Bearer ${ENV_API_TOKEN}` } : {}),
-        },
-        body: formData,
-      });
-
-      console.log(`[useChat] Upload response status: ${response.status}`);
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('[useChat] Upload success data:', data);
-      return { success: true, data };
-    } catch (error) {
-      console.error('[useChat] Upload error, falling back to mock upload:', error);
-      // Fallback to mock upload so frontend doesn't break when server is offline
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return {
-        success: true,
-        data: {
-          status: 'success',
-          file_id: `file_mock_${generateId()}`,
-        }
-      };
-    }
-  }, [ENV_UPLOAD_URL, ENV_API_TOKEN, webhookConfig.url]);
+    return uploadFileRequest(file, appConfig.uploadUrl, appConfig.apiToken);
+  }, [webhookConfig.url]);
 
   return {
     messages,
@@ -391,103 +333,9 @@ export function useChat() {
     retryLastMessage,
     stopStreaming,
     uploadFile,
-    hasUploadConfig: ENV_ENABLE_UPLOADS,
-    appName: ENV_APP_NAME,
-    appDescription: ENV_APP_DESCRIPTION,
-    appLogoUrl: ENV_APP_LOGO_URL,
+    hasUploadConfig: appConfig.enableUploads,
+    appName: appConfig.appName,
+    appDescription: appConfig.appDescription,
+    appLogoUrl: appConfig.appLogoUrl,
   };
-}
-function getDemoResponse(input: string, attachments?: Attachment[]): string {
-  if (attachments && attachments.length > 0) {
-    const names = attachments.map(a => `**${a.name}** (${a.type})`).join(', ');
-    return `I received the following file(s) in demo mode: ${names}.\n\nHow can I help you analyze them?`;
-  }
-
-  const normalizedInput = input.toLowerCase();
-
-  if (
-    normalizedInput.includes('python') ||
-    normalizedInput.includes('snake') ||
-    normalizedInput.includes('code') ||
-    normalizedInput.includes('script')
-  ) {
-    return `Here's a simple Snake game in Python using the built-in \`turtle\` module (no external libraries required):
-
-\`\`\`python
-import turtle
-import time
-import random
-
-# Screen setup
-screen = turtle.Screen()
-screen.title("Snake Game")
-screen.bgcolor("black")
-screen.setup(width=600, height=600)
-screen.tracer(0)
-
-# Snake head
-head = turtle.Turtle()
-head.speed(0)
-head.shape("square")
-head.color("white")
-head.penup()
-head.goto(0,0)
-head.direction = "stop"
-
-# Snake food
-food = turtle.Turtle()
-food.speed(0)
-food.shape("circle")
-food.color("red")
-food.penup()
-food.goto(0,100)
-
-segments = []
-
-# Pen
-pen = turtle.Turtle()
-pen.speed(0)
-pen.shape("square")
-pen.color("white")
-pen.penup()
-pen.hideturtle()
-pen.goto(0, 260)
-pen.write("Score: 0  High Score: 0", align="center", font=("Courier", 24, "normal"))
-\`\`\``;
-  }
-
-  if (
-    normalizedInput.includes('table') ||
-    normalizedInput.includes('compare') ||
-    normalizedInput.includes('markdown') ||
-    normalizedInput.includes('fruit')
-  ) {
-    return `Here is a markdown table comparing different fruits:
-
-| Fruit | Color | Taste | Price |
-| :--- | :--- | :--- | :--- |
-| **Apple** | Red / Green | Sweet / Tart | $1.20 / lb |
-| **Orange** | Orange | Citrusy / Sweet | $0.90 / lb |
-| **Banana** | Yellow | Sweet / Creamy | $0.60 / lb |
-
-In Javascript, you can declare a fruit variable like this: \`const fruit = "apple"\`.`;
-  }
-
-  const responses = [
-    "I'm VoltChat running in demo mode. Configure a webhook URL to connect to your AI backend.",
-    "This is a simulated response. Your message was received instantly — that's the VoltChat difference.",
-    "Demo mode active. Set up your webhook endpoint to see real AI responses with the same electric speed.",
-    "How far connect your webhook now.. wetin dey worry you sef😂",
-    "No webhook configured. I'm showing you how fast responses feel in VoltChat. Ready to connect your backend?",
-  ];
-
-  if (normalizedInput.includes('hello') || normalizedInput.includes('hi')) {
-    return "Connected. Ready. What can I help you build today?";
-  }
-
-  if (normalizedInput.includes('webhook')) {
-    return "Click the ⚡ icon in the top right to configure your webhook URL. VoltChat will POST your messages and display responses with simulated streaming.";
-  }
-
-  return responses[Math.floor(Math.random() * responses.length)];
 }

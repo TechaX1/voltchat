@@ -1,0 +1,7 @@
+# Local-only overrides — copy to docker-compose.override.yml (gitignored).
+services:
+  frontend:
+    ports:
+      - "8026:80"
+    # env_file:
+    #   - .env

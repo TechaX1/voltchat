@@ -1,5 +1,10 @@
 services:
   frontend:
     build: .
-    container_name: voltchat  # <--- Remember this name!
-    restart: always
+    container_name: voltchat
+    restart: unless-stopped
+    ports:
+      - "8026:80"
+    # Vite env vars are baked in at build time. Override via build args:
+    #   docker compose build --build-arg VITE_WEBHOOK_URL=https://your-api.com/chat
+    # Local overrides (ports, env_file) belong in docker-compose.override.yml (gitignored).

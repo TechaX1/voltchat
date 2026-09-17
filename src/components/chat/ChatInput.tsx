@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
+import { appConfig } from '@/config';
 
 interface ChatInputProps {
   onSend: (message: string, attachments: Attachment[]) => void;
@@ -207,7 +208,7 @@ export function ChatInput({
     const files = e.target.files;
     if (!files || files.length === 0 || !onUpload) return;
 
-    const maxAttachments = Number(import.meta.env.VITE_MAX_ATTACHMENTS) || 5;
+    const maxAttachments = appConfig.maxAttachments;
     const currentCount = attachments.length;
     const incomingCount = files.length;
 
@@ -237,7 +238,8 @@ export function ChatInput({
 
       onUpload(file).then((result) => {
         if (result.success) {
-          const fileId = (result.data && result.data.file_id) || `file_${Math.random().toString(36).substring(2, 9)}`;
+          const data = result.data as { file_id?: string } | undefined;
+          const fileId = data?.file_id || `file_${Math.random().toString(36).substring(2, 9)}`;
           setAttachments(prev => prev.map(att =>
             att.localId === localId
               ? { ...att, isUploading: false, fileId }
