@@ -33,3 +33,8 @@ bun.lockb
 docker-compose.override.yml
 .agents/
 .commandcode/
+
+# Environment files (VITE_* values are compiled into the client bundle)
+.env
+.env.*
+!.env.example

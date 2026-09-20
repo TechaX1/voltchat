@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { StopCircle, Plus, Paperclip, Scan, Camera, Image, Lightbulb, Telescope, Globe, MoreHorizontal, ChevronRight, ArrowUp, FileText, FileSpreadsheet, FileCode, File, X, Mic, Loader2 } from 'lucide-react';
+import { StopCircle, Plus, Image, ArrowUp, FileText, FileSpreadsheet, FileCode, File, X, Mic, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Message, Attachment, UploadResult } from '@/types/chat';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
 
 interface ChatInputProps {
@@ -237,12 +231,17 @@ export function ChatInput({
 
       onUpload(file).then((result) => {
         if (result.success) {
-          const fileId = result.data?.file_id ?? result.data?.fileId ?? `file_${Math.random().toString(36).substring(2, 9)}`;
+          const fileId = (result.data && result.data.file_id) || `file_${Math.random().toString(36).substring(2, 9)}`;
           setAttachments(prev => prev.map(att =>
             att.localId === localId
               ? { ...att, isUploading: false, fileId }
               : att
           ));
+          if (result.message) {
+            toast.warning(`Upload failed (${result.message}) — ${file.name} attached as a simulated demo file.`);
+          } else if (result.simulated) {
+            toast.info(`${file.name} attached (simulated — no upload service configured).`);
+          }
         } else {
           setAttachments(prev => prev.filter(att => att.localId !== localId));
           toast.error(`Failed to upload ${file.name}: ${result.message || 'Unknown error'}`);
@@ -345,58 +344,21 @@ export function ChatInput({
                   className="hidden"
                   multiple
                 />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
                       disabled={isLoading}
                       size="icon"
                       variant="ghost"
+                      onClick={handleFileClick}
                       className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
                     >
                       <Plus className="h-5 w-5" />
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">Attach files</span>
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" side="top" className="w-56 mb-2">
-                    <DropdownMenuItem onClick={handleFileClick} className="cursor-pointer">
-                      <Paperclip className="mr-2 h-4 w-4" />
-                      <span>Upload photos & files</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Scan className="mr-2 h-4 w-4" />
-                      <span>Take screenshot</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Camera className="mr-2 h-4 w-4" />
-                      <span>Take photo</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled>
-                      <Image className="mr-2 h-4 w-4" />
-                      <span>Create image</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Lightbulb className="mr-2 h-4 w-4" />
-                      <span>Thinking</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Telescope className="mr-2 h-4 w-4" />
-                      <span>Deep research</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Globe className="mr-2 h-4 w-4" />
-                      <span>Web search</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <MoreHorizontal className="mr-2 h-4 w-4" />
-                        <span>More</span>
-                      </div>
-                      <ChevronRight className="h-4 w-4" />
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Upload photos & files</TooltipContent>
+                </Tooltip>
               </>
             )}
             <textarea
@@ -416,17 +378,20 @@ export function ChatInput({
             />
             
             {/* Microphone Icon */}
-            <TooltipProvider>
-              <Button
-                disabled={isLoading}
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 shrink-0 rounded-full text-muted-foreground/60 hover:text-foreground"
-              >
-                <Mic className="h-5 w-5" />
-                <span className="sr-only">Voice Input</span>
-              </Button>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  disabled={isLoading}
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 shrink-0 rounded-full text-muted-foreground/60 hover:text-foreground"
+                >
+                  <Mic className="h-5 w-5" />
+                  <span className="sr-only">Voice input</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Voice input (coming soon)</TooltipContent>
+            </Tooltip>
 
             {isLoading && isStreamingEnabled ? (
               <Button
@@ -445,8 +410,8 @@ export function ChatInput({
                 size="icon"
                 className={cn(
                   'h-8 w-8 shrink-0 rounded-full transition-all duration-150',
-                  'bg-white text-black hover:bg-white/90',
-                  'disabled:bg-white/20 disabled:text-white/40 disabled:cursor-not-allowed'
+                  'bg-primary text-primary-foreground hover:bg-primary/90',
+                  'disabled:opacity-40 disabled:cursor-not-allowed'
                 )}
               >
                 <ArrowUp className="h-5 w-5 stroke-[3]" />
@@ -472,9 +437,4 @@ export function ChatInput({
       </div>
     </div>
   );
-}
-
-// Helper wrapper to prevent compilation errors if tooltip provider is needed
-function TooltipProvider({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
 }
