@@ -27,6 +27,10 @@ function readBody(req) {
         resolve({});
       }
     });
+    // A client that disconnects mid-body never fires 'end' — resolve empty
+    // instead of leaving the request handler pending forever.
+    req.on('error', () => resolve({}));
+    req.on('aborted', () => resolve({}));
   });
 }
 

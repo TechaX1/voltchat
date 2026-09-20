@@ -39,11 +39,15 @@ export async function postChat(
 /** Extract display text from the supported JSON shapes (see docs/BACKEND_CONTRACT.md). */
 export function extractJsonContent(data: Record<string, unknown>): string {
   const output = data.output as { response?: unknown } | string | undefined;
+  // Empty/whitespace-only strings count as missing so the next field is used
+  // (e.g. `{ response: '', message: 'real answer' }` renders 'real answer').
+  const nonEmpty = (value: unknown) =>
+    typeof value === 'string' && value.trim().length === 0 ? undefined : value;
   const pick =
-    (typeof output === 'object' ? output?.response : output) ??
-    data.response ??
-    data.message ??
-    data.content;
+    nonEmpty(typeof output === 'object' ? output?.response : output) ??
+    nonEmpty(data.response) ??
+    nonEmpty(data.message) ??
+    nonEmpty(data.content);
   return typeof pick === 'string' ? pick : JSON.stringify(data);
 }
 

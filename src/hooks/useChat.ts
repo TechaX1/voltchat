@@ -299,8 +299,8 @@ export function useChat() {
 
   const uploadFile = useCallback(async (file: File) => {
     // Demo backends always use simulated uploads so attachment UI stays testable.
+    // ChatInput surfaces the simulated outcome to the user as a toast.
     if (isDemoMode(webhookConfig.url)) {
-      console.log(`[useChat] Demo-mode simulated upload for: ${file.name}`);
       await new Promise((resolve) => setTimeout(resolve, 800));
       return {
         success: true,

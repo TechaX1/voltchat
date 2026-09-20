@@ -26,6 +26,18 @@ describe('extractJsonContent', () => {
     const data = { weird: 123 };
     expect(extractJsonContent(data)).toBe(JSON.stringify(data));
   });
+
+  it('falls through empty string fields to the next candidate', () => {
+    expect(extractJsonContent({ response: '', message: 'fallback' })).toBe('fallback');
+    expect(extractJsonContent({ output: '', response: 'c' })).toBe('c');
+    expect(extractJsonContent({ output: { response: '' }, content: 'e' })).toBe('e');
+    expect(extractJsonContent({ output: '   ', content: 'e' })).toBe('e');
+  });
+
+  it('stringifies payloads whose only string field is empty', () => {
+    const data = { response: '' };
+    expect(extractJsonContent(data)).toBe(JSON.stringify(data));
+  });
 });
 
 describe('uploadFileRequest', () => {

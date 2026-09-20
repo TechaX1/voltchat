@@ -36,6 +36,9 @@ Parsed by `extractJsonContent()`. Fields checked in order:
 
 1. `output.response` 2. `output` (string) 3. `response` 4. `message` 5. `content`
 
+Empty/whitespace-only values are skipped and the next field is used; if no field
+holds text, the raw JSON is stringified and shown as-is.
+
 ```json
 { "response": "I am doing great! How can I help you build today?" }
 ```
@@ -45,15 +48,21 @@ The UI optionally simulates streaming (toggle in header, persisted as
 
 ## Chat response — Mode B: streaming (anything non-JSON)
 
-Raw text chunks are appended live, e.g. `text/event-stream`:
+Any content type other than `application/json` is streamed as **raw text**: the
+body is appended to the chat bubble verbatim, chunk by chunk. SSE-style framing
+(`data:` lines) is *not* parsed — it would render literally — so send plain text:
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: text/event-stream
+Content-Type: text/plain
 
-data: hello
-data:  world
+Hello! Streaming this reply chunk by chunk.
 ```
+
+The mock server and the recipes in `docs/RECIPES.md` label their streams
+`text/event-stream` while sending plain-text chunks — that also works, since only
+`application/json` is special-cased. If your backend emits true SSE framing,
+strip it server-side before responding.
 
 Use `npm run mock` (`examples/mock-server/server.mjs`) to try both modes locally.
 
