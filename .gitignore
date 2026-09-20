@@ -11,9 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
-
-# Local env overrides (tracked template is .env.example)
-.env
+*.tsbuildinfo
 
 # Canonical package manager is npm (package-lock.json); ignore bun lockfile
 bun.lockb

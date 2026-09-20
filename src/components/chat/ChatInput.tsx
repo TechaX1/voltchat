@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { Message, Attachment, UploadResult } from '@/types/chat';
 import { toast } from 'sonner';
+import { appConfig } from '@/config';
 
 interface ChatInputProps {
   onSend: (message: string, attachments: Attachment[]) => void;
@@ -201,7 +202,7 @@ export function ChatInput({
     const files = e.target.files;
     if (!files || files.length === 0 || !onUpload) return;
 
-    const maxAttachments = Number(import.meta.env.VITE_MAX_ATTACHMENTS) || 5;
+    const maxAttachments = appConfig.maxAttachments;
     const currentCount = attachments.length;
     const incomingCount = files.length;
 

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '@/config';
 
 type Theme = 'dark' | 'light' | 'deep-dark';
 
 const THEME_STORAGE_KEY = 'voltchat-theme';
 
-const DEFAULT_THEME = (import.meta.env.VITE_DEFAULT_THEME as Theme) || 'dark';
+const DEFAULT_THEME = appConfig.defaultTheme;
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);

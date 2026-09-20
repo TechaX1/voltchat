@@ -53,7 +53,7 @@ VITE_UPLOAD_URL=https://your-api.com/upload
 
 ## Building and Running
 
-The project uses `npm` for package management.
+The project works with `npm` **or** `bun` for package management.
 
 ### Docker: multi-stage build (Vite build + Nginx serve)
 
@@ -83,24 +83,42 @@ Notes:
 - `docker-compose.override.yml` is gitignored for local tweaks (e.g. mapping
   a different host port). The base `docker-compose.yml` already publishes
   `8026:80` so a fresh clone works without an override file.
-
+- To point at a backend, rebuild with `--build-arg VITE_WEBHOOK_URL=...`
+  or set it in `.env` before building. From inside a container use
+  `http://host.docker.internal:9732/chat` for a host-local backend.
 
 ### Setup Locally:
 
 *   **Clone Project:**
     ```bash
-    git clone
+    git clone <url> voltchat && cd voltchat
     ```
 
-*   **Install Dependencies:**
+*   **Env (required):**
     ```bash
-    npm install
+    cp .env.example .env
+    ```
+
+*   **Install Dependencies (npm or bun):**
+    ```bash
+    npm install   # or: bun install
     ```
 
 *   **Run Development Server:** Starts the Vite development server with hot-reloading.
     ```bash
-    npm run dev
+    npm run dev   # or: bun run dev  → http://localhost:8026
     ```
+
+*   **Verify (typecheck, lint, tests, build):**
+    ```bash
+    npm run typecheck; npm run lint; npm run test; npm run build
+    ```
+
+### Docs:
+- [`docs/BACKEND_CONTRACT.md`](./docs/BACKEND_CONTRACT.md) — request/response contract + demo modes
+- [`docs/RECIPES.md`](./docs/RECIPES.md) — FastAPI/Node/n8n servers (`npm run mock` for zero-dep fake)
+- [`docs/THEMING.md`](./docs/THEMING.md) — branding via `VITE_APP_*` + themes
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — setup, checks, conventions
 
 ### Project Structure:
 
