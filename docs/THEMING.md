@@ -14,7 +14,10 @@ There are no hardcoded product names in the UI shell.
 | `VITE_DEFAULT_THEME`   | `src/hooks/useTheme.ts` initial theme          |
 
 `index.html` uses Vite `%VITE_*%` placeholders, so branding applies at build time.
-Runtime overrides after build are not supported — rebuild to rebrand.
+Build-time fallbacks for those placeholders live in `vite.config.ts`
+(`HTML_ENV_DEFAULTS`) so `npm run build` works even with no `.env` — any key
+defined in `.env` overrides the fallback. Runtime overrides after build are not
+supported — rebuild to rebrand.
 
 ## Themes
 

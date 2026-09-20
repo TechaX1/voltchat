@@ -48,8 +48,10 @@ export function extractJsonContent(data: Record<string, unknown>): string {
 }
 
 /**
- * Upload a file. Falls back to a mock success (same shape) when no upload URL
- * is configured or the server is unreachable, so attachment UI stays testable.
+ * Upload a file. Server rejections (non-2xx) and malformed responses return
+ * `success: false` so callers can surface them. A mock success (same shape) is
+ * only used when the request never completed — no URL configured or the server
+ * was unreachable (fetch rejects with TypeError) — so attachment UI stays testable.
  */
 export async function uploadFileRequest(
   file: File,
@@ -70,10 +72,16 @@ export async function uploadFileRequest(
       },
       body: formData,
     });
-    if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
+    if (!response.ok) {
+      return {
+        success: false,
+        message: `Upload failed: HTTP ${response.status} ${response.statusText}`.trim(),
+      };
+    }
     return { success: true, data: await response.json() };
   } catch (error) {
-    console.error('[webhook] Upload error, falling back to mock upload:', error);
+    if (!(error instanceof TypeError)) throw error;
+    console.error('[webhook] Upload unreachable, falling back to mock upload:', error);
     await new Promise((resolve) => setTimeout(resolve, 500));
     return { success: true, data: { status: 'success', file_id: `file_mock_${generateId()}` } };
   }

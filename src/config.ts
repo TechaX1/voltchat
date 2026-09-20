@@ -34,8 +34,26 @@ export type AppConfig = {
   defaultTheme: 'light' | 'dark' | 'deep-dark';
 };
 
+/**
+ * appConfig is parsed at import time, so a raw ZodError here would surface as
+ * an unactionable stack trace (blank page in production builds). Re-throw with
+ * the offending env key named instead.
+ */
 function parse(raw: Record<string, string | undefined>): AppConfig {
-  const parsed = rawSchema.parse(raw);
+  try {
+    return toAppConfig(rawSchema.parse(raw));
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const details = error.issues
+        .map((issue) => `${issue.path.join('.') || 'config'}: ${issue.message}`)
+        .join('; ');
+      throw new Error(`Invalid app configuration — fix the .env values. ${details}`);
+    }
+    throw error;
+  }
+}
+
+function toAppConfig(parsed: z.infer<typeof rawSchema>): AppConfig {
   return {
     webhookUrl: parsed.VITE_WEBHOOK_URL,
     apiToken: parsed.VITE_API_TOKEN ?? '',

@@ -29,9 +29,14 @@ describe('parseAppConfig', () => {
     expect(config.defaultTheme).toBe('light');
   });
 
-  it('rejects invalid enum values', () => {
-    expect(() => parseAppConfig({ VITE_DEMO_MODE: 'sometimes' })).toThrow();
-    expect(() => parseAppConfig({ VITE_DEFAULT_THEME: 'neon' })).toThrow();
+  it('rejects invalid enum values with an error naming the key', () => {
+    expect(() => parseAppConfig({ VITE_DEMO_MODE: 'sometimes' })).toThrow(/VITE_DEMO_MODE/);
+    expect(() => parseAppConfig({ VITE_DEFAULT_THEME: 'neon' })).toThrow(/VITE_DEFAULT_THEME/);
+  });
+
+  it('rejects unparseable numeric values with the key named', () => {
+    // '' coerces to 0, which violates the 1–20 range — must still fail readably.
+    expect(() => parseAppConfig({ VITE_MAX_ATTACHMENTS: '' })).toThrow(/VITE_MAX_ATTACHMENTS/);
   });
 });
 

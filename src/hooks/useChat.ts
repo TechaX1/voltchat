@@ -301,7 +301,7 @@ export function useChat() {
       .find((m) => m.role === 'user');
     if (lastUserMessage) {
       setMessages((prev) => prev.slice(0, -1));
-      sendMessage(lastUserMessage.content);
+      sendMessage(lastUserMessage.content, lastUserMessage.attachments);
     }
   }, [messages, sendMessage]);
 

@@ -61,8 +61,9 @@ Use `npm run mock` (`examples/mock-server/server.mjs`) to try both modes locally
 
 `POST multipart/form-data` with key `file` to `VITE_UPLOAD_URL`.
 Expected JSON: `{ "status": "success", "file_id": "file_98765" }`.
-When unconfigured/offline the UI falls back to a mock success so attachment
-flows stay testable (see `uploadFileRequest()`).
+When unconfigured/unreachable the UI falls back to a mock success so attachment
+flows stay testable; server rejections (non-2xx) surface as upload failures
+(see `uploadFileRequest()`).
 
 Limit: `VITE_MAX_ATTACHMENTS` (default 5). Toggle UI with `VITE_ENABLE_UPLOADS`.
 
