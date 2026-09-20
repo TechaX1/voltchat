@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useChat } from "./useChat";
 import type { UploadResult } from "@/types/chat";
+
+type UseChatModule = typeof import("@/hooks/useChat");
+
+// The hook reads VITE_* values at module scope, so stub the env BEFORE each
+// fresh import; vi.resetModules() forces the module to re-evaluate per call.
+const loadHook = async () => {
+  vi.resetModules();
+  const mod: UseChatModule = await import("@/hooks/useChat");
+  return mod.useChat;
+};
 
 const MESSAGES_KEY = "voltchat-messages";
 const WEBHOOK_KEY = "voltchat-webhook-url";
@@ -35,10 +44,13 @@ function streamFetchMock(chunks: string[]) {
   });
 }
 
+const makeFile = (name = "notes.txt") =>
+  new File(["hello"], name, { type: "text/plain" });
+
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
-  vi.unstubAllEnvs();
+  vi.spyOn(console, "error").mockImplementation(() => {});
   // Isolate tests from any local .env file: default to demo mode (no backend).
   vi.stubEnv("VITE_WEBHOOK_URL", "");
   vi.stubEnv("VITE_UPLOAD_URL", "");
@@ -49,11 +61,13 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 describe("useChat initial state", () => {
-  it("starts in demo mode with empty state", () => {
+  it("starts in demo mode with empty state", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     expect(result.current.messages).toEqual([]);
@@ -62,7 +76,8 @@ describe("useChat initial state", () => {
     expect(result.current.isStreamingEnabled).toBe(true);
   });
 
-  it("ignores blank messages", () => {
+  it("ignores blank messages", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -76,6 +91,7 @@ describe("useChat initial state", () => {
 
 describe("useChat demo mode", () => {
   it("completes a message without streaming when streaming is disabled", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -102,6 +118,7 @@ describe("useChat demo mode", () => {
   });
 
   it("streams demo responses when streaming is enabled", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -124,6 +141,7 @@ describe("useChat demo mode", () => {
   });
 
   it("answers code questions with a python example in demo mode", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -141,6 +159,7 @@ describe("useChat demo mode", () => {
   });
 
   it("stopStreaming halts an in-flight response", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -168,6 +187,7 @@ describe("useChat demo mode", () => {
 
 describe("useChat persistence", () => {
   it("persists messages and reloads them on mount", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -190,6 +210,7 @@ describe("useChat persistence", () => {
   });
 
   it("clearMessages empties history and rotates the session id", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
     const firstSession = sessionStorage.getItem("voltchat-session-id");
 
@@ -215,7 +236,8 @@ describe("useChat persistence", () => {
 });
 
 describe("useChat webhook config", () => {
-  it("updates the webhook URL and persists it", () => {
+  it("updates the webhook URL and persists it", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     act(() => {
@@ -229,8 +251,9 @@ describe("useChat webhook config", () => {
     expect(localStorage.getItem(WEBHOOK_KEY)).toBe("https://ai.example.test/chat");
   });
 
-  it("ignores manual updates when the URL comes from env", () => {
+  it("ignores manual updates when the URL comes from env", async () => {
     vi.stubEnv("VITE_WEBHOOK_URL", "https://env.example.test/chat");
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
 
     expect(result.current.webhookConfig).toMatchObject({
@@ -249,6 +272,7 @@ describe("useChat webhook config", () => {
 
 describe("useChat backend integration", () => {
   it("posts to the webhook and prefers output.response when parsing JSON", async () => {
+    const useChat = await loadHook();
     const fetchMock = jsonFetchMock({
       output: { response: "nested reply" },
       response: "top-level reply",
@@ -284,6 +308,7 @@ describe("useChat backend integration", () => {
   });
 
   it("assembles real streaming (SSE) responses chunk by chunk", async () => {
+    const useChat = await loadHook();
     const fetchMock = streamFetchMock(["Hello ", "stream"]);
     vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() => useChat());
@@ -300,10 +325,13 @@ describe("useChat backend integration", () => {
     expect(result.current.messages[1].status).toBe("complete");
     expect(result.current.isLoading).toBe(false);
   });
+});
 
-  it("falls back to a mock upload when no upload endpoint is configured", async () => {
+describe("useChat.uploadFile", () => {
+  it("falls back to a simulated upload when no upload endpoint is configured", async () => {
+    const useChat = await loadHook();
     const { result } = renderHook(() => useChat());
-    const file = new File(["hello"], "notes.txt", { type: "text/plain" });
+    const file = makeFile();
 
     let upload: UploadResult | undefined;
     act(() => {
@@ -316,6 +344,58 @@ describe("useChat backend integration", () => {
     });
 
     expect(upload?.success).toBe(true);
+    expect(upload?.simulated).toBe(true);
     expect(upload?.data?.file_id).toMatch(/^file_mock_/);
+  });
+
+  it("returns the server payload on a real successful upload", async () => {
+    vi.stubEnv("VITE_WEBHOOK_URL", "http://test/chat");
+    vi.stubEnv("VITE_UPLOAD_URL", "http://test/upload");
+    const useChat = await loadHook();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: "success", file_id: "file_123" }),
+      })
+    );
+    const { result } = renderHook(() => useChat());
+
+    let upload: UploadResult | undefined;
+    await act(async () => {
+      upload = await result.current.uploadFile(makeFile());
+    });
+
+    expect(upload?.success).toBe(true);
+    expect(upload?.simulated).toBeUndefined();
+    expect(upload?.message).toBeUndefined();
+    expect(upload?.data?.file_id).toBe("file_123");
+  });
+
+  it("falls back to a simulated attachment — marked as such — when the upload server is unreachable", async () => {
+    vi.stubEnv("VITE_WEBHOOK_URL", "http://test/chat");
+    vi.stubEnv("VITE_UPLOAD_URL", "http://test/upload");
+    const useChat = await loadHook();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch"))
+    );
+    const { result } = renderHook(() => useChat());
+
+    let upload: UploadResult | undefined;
+    act(() => {
+      void result.current.uploadFile(makeFile()).then((r) => {
+        upload = r;
+      });
+    });
+    // The fallback sleeps 500ms before returning.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // Never a bare fake success: simulated must be set and the error surfaced.
+    expect(upload?.success).toBe(true);
+    expect(upload?.simulated).toBe(true);
+    expect(upload?.message).toBe("Failed to fetch");
   });
 });

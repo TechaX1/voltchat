@@ -231,7 +231,7 @@ export function ChatInput({
 
       onUpload(file).then((result) => {
         if (result.success) {
-          const fileId = (result.data && result.data.file_id) || `file_${Math.random().toString(36).substring(2, 9)}`;
+          const fileId = result.data?.file_id || result.data?.fileId || `file_${Math.random().toString(36).substring(2, 9)}`;
           setAttachments(prev => prev.map(att =>
             att.localId === localId
               ? { ...att, isUploading: false, fileId }

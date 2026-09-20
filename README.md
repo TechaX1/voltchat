@@ -66,22 +66,23 @@ Run with Compose (PowerShell):
 
 ```powershell
 docker compose up --build
-# app available at http://localhost:8080
+# app available at http://localhost:8026
 ```
 
 Or with plain Docker:
 
 ```powershell
 docker build -t voltchat .
-docker run --rm -p 8080:80 voltchat
+docker run --rm -p 8026:80 voltchat
 ```
 
 Notes:
 - Vite env vars (`VITE_*` from `.env`) are baked in at build time, so set
-  them before building.
+  them before building. `index.html` ships static branding defaults, so a
+  build with no `.env` still renders correctly (see `src/lib/branding.ts`).
 - `docker-compose.override.yml` is gitignored for local tweaks (e.g. mapping
   a different host port). The base `docker-compose.yml` already publishes
-  `8080:80` so a fresh clone works without an override file.
+  `8026:80` so a fresh clone works without an override file.
 
 
 ### Setup Locally:
