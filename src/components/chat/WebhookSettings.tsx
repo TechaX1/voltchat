@@ -36,7 +36,6 @@ export function WebhookSettings({
     setTestError('');
 
     try {
-      console.log(`[WebhookSettings] Testing connection to: ${inputUrl}`);
       const response = await fetch(inputUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,8 +45,6 @@ export function WebhookSettings({
           test: true,
         }),
       });
-
-      console.log(`[WebhookSettings] Test response status: ${response.status}`);
 
       if (response.ok) {
         setTestStatus('success');

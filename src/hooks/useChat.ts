@@ -1,23 +1,22 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, WebhookConfig, Attachment } from '@/types/chat';
+import { Message, WebhookConfig, Attachment, UploadResult } from '@/types/chat';
+import { APP_NAME, APP_DESCRIPTION, APP_LOGO_URL } from '@/lib/branding';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
 const MESSAGES_STORAGE_KEY = 'voltchat-messages';
 const SESSION_ID_STORAGE_KEY = 'voltchat-session-id';
 const STREAMING_ENABLED_KEY = 'voltchat-streaming-enabled';
 
+// Build-time configuration. Kept at module scope: these never change at
+// runtime, so callbacks don't need them in dependency arrays.
+const ENV_WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL;
+const ENV_API_TOKEN = import.meta.env.VITE_API_TOKEN;
+const ENV_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL;
+const ENV_ENABLE_UPLOADS = import.meta.env.VITE_ENABLE_UPLOADS === 'true';
+
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export function useChat() {
-  const ENV_WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL;
-  const ENV_API_TOKEN = import.meta.env.VITE_API_TOKEN;
-  const ENV_UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL;
-  const ENV_APP_NAME = import.meta.env.VITE_APP_NAME || 'VoltChat';
-  const ENV_APP_DESCRIPTION = import.meta.env.VITE_APP_DESCRIPTION || 'A high-performance chat interface.';
-  const ENV_ENABLE_UPLOADS = import.meta.env.VITE_ENABLE_UPLOADS === 'true';
-  const ENV_APP_LOGO_URL = import.meta.env.VITE_APP_LOGO_URL || '';
-  const ENV_FAVICON_URL = import.meta.env.VITE_FAVICON_URL || '';
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
@@ -98,7 +97,7 @@ export function useChat() {
       isExternal: false,
     });
     clearMessages();
-  }, [clearMessages, ENV_WEBHOOK_URL]);
+  }, [clearMessages]);
 
   const toggleStreaming = useCallback(() => {
     setIsStreamingEnabled((prev) => !prev);
@@ -198,13 +197,6 @@ export function useChat() {
           return;
         }
 
-        console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
-          message: content.trim(),
-          sessionId,
-          timestamp: new Date().toISOString(),
-          attachments
-        });
-
         const response = await fetch(webhookConfig.url, {
           method: 'POST',
           headers: {
@@ -219,8 +211,6 @@ export function useChat() {
           }),
         });
 
-        console.log(`[useChat] Response status: ${response.status} ${response.statusText}`);
-
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -229,7 +219,6 @@ export function useChat() {
 
         if (contentType.includes('application/json')) {
           const data = await response.json();
-          console.log('[useChat] Received data:', data);
           const responseContent =
             (typeof data.output === 'object' ? data.output?.response : data.output) ||
             data.response ||
@@ -328,14 +317,13 @@ export function useChat() {
     }
   }, [messages, sendMessage]);
 
-  const uploadFile = useCallback(async (file: File) => {
-    // If upload URL is not configured or we are in demo mode (no webhook URL), use simulated upload
+  const uploadFile = useCallback(async (file: File): Promise<UploadResult> => {
+    // Simulated upload when no upload endpoint is configured or in demo mode.
     if (!ENV_UPLOAD_URL || !webhookConfig.url) {
-      console.log(`[useChat] Simulated mock upload for: ${file.name}`);
-      // Simulate a short delay
       await new Promise((resolve) => setTimeout(resolve, 800));
       return {
         success: true,
+        simulated: true,
         data: {
           status: 'success',
           file_id: `file_mock_${generateId()}`,
@@ -344,7 +332,6 @@ export function useChat() {
     }
 
     try {
-      console.log(`[useChat] Uploading file to: ${ENV_UPLOAD_URL}`, { fileName: file.name, fileSize: file.size });
       const formData = new FormData();
       formData.append('file', file);
 
@@ -356,28 +343,28 @@ export function useChat() {
         body: formData,
       });
 
-      console.log(`[useChat] Upload response status: ${response.status}`);
-
       if (!response.ok) {
         throw new Error(`Upload failed: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('[useChat] Upload success data:', data);
       return { success: true, data };
     } catch (error) {
-      console.error('[useChat] Upload error, falling back to mock upload:', error);
-      // Fallback to mock upload so frontend doesn't break when server is offline
+      // Documented fallback: keep the attachment flow usable when the upload
+      // server is offline, but mark it so the UI can tell the user it was simulated.
+      console.error('[useChat] Upload failed, using simulated attachment:', error);
       await new Promise((resolve) => setTimeout(resolve, 500));
       return {
         success: true,
+        simulated: true,
+        message: error instanceof Error ? error.message : 'Upload failed',
         data: {
           status: 'success',
           file_id: `file_mock_${generateId()}`,
         }
       };
     }
-  }, [ENV_UPLOAD_URL, ENV_API_TOKEN, webhookConfig.url]);
+  }, [webhookConfig.url]);
 
   return {
     messages,
@@ -392,9 +379,9 @@ export function useChat() {
     stopStreaming,
     uploadFile,
     hasUploadConfig: ENV_ENABLE_UPLOADS,
-    appName: ENV_APP_NAME,
-    appDescription: ENV_APP_DESCRIPTION,
-    appLogoUrl: ENV_APP_LOGO_URL,
+    appName: APP_NAME,
+    appDescription: APP_DESCRIPTION,
+    appLogoUrl: APP_LOGO_URL,
   };
 }
 function getDemoResponse(input: string, attachments?: Attachment[]): string {

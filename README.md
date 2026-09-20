@@ -49,6 +49,8 @@ VITE_UPLOAD_URL=https://your-api.com/upload
 - **Upload**: Files are sent as `multipart/form-data` with the key `file`.
 - **Auth**: If `VITE_API_TOKEN` is set, all requests will include an `Authorization: Bearer <token>` header.
 
+> **⚠️ Security note:** `VITE_*` variables are compiled into the client-side JavaScript bundle — **anything you put in `.env`, including `VITE_API_TOKEN`, is visible to anyone who can load the app.** Treat it as public. Use short-lived/scoped tokens, or proxy requests through a server-side backend if the token must stay secret. Never commit real `.env` files (`.env` is gitignored; use `.env.example` as the template).
+
 ## Building and Running
 
 The project uses `npm` for package management.
