@@ -15,6 +15,12 @@ dist-ssr
 .env
 .env.*.local
 
+# Local env overrides (tracked template is .env.example)
+.env
+
+# Canonical package manager is npm (package-lock.json); ignore bun lockfile
+bun.lockb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -30,3 +36,8 @@ dist-ssr
 docker-compose.override.yml
 .agents/
 .commandcode/
+
+# Environment files (VITE_* values are compiled into the client bundle)
+.env
+.env.*
+!.env.example

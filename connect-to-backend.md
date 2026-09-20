@@ -15,6 +15,11 @@ VITE_WEBHOOK_URL=https://your-api.com/chat
 
 # Optional: Bearer token for authentication
 # If set, VoltChat will send: Authorization: Bearer <token>
+#
+# ⚠️ Security: VITE_* variables are compiled into the client bundle, so this
+# token is visible to anyone who can load the app. Use short-lived or scoped
+# tokens, or proxy requests through a server-side backend if the token must
+# stay secret.
 VITE_API_TOKEN=your_secret_token
 
 # Optional: Endpoint for file uploads

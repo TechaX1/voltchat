@@ -1,4 +1,4 @@
-import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose, Sun, Moon, Palette } from 'lucide-react';
+import { Zap, Settings, Trash2, PanelLeft, PanelLeftClose, Sun, Moon, SunMoon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -103,8 +103,8 @@ export function ChatHeader({
               className="h-8 w-8 text-muted-foreground"
             >
               {theme === 'dark' && <Sun className="h-4 w-4" />}
-              {theme === 'light' && <Palette className="h-4 w-4" />}
-              {theme === 'deep-dark' && <Moon className="h-4 w-4" />}
+              {theme === 'light' && <Moon className="h-4 w-4" />}
+              {theme === 'deep-dark' && <SunMoon className="h-4 w-4" />}
               <span className="sr-only">Toggle theme</span>
             </Button>
           </TooltipTrigger>

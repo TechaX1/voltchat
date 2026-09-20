@@ -1,16 +1,12 @@
 import type { Attachment } from '@/types/chat';
 
+export type { UploadResult } from '@/types/chat';
+
 export interface ChatRequestPayload {
   message: string;
   sessionId: string;
   timestamp: string;
   attachments: Attachment[];
-}
-
-export interface UploadResult {
-  success: boolean;
-  data?: unknown;
-  message?: string;
 }
 
 // Backend helpers live in this folder: `webhook.ts` (HTTP transport) and

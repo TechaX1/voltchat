@@ -49,24 +49,43 @@ VITE_UPLOAD_URL=https://your-api.com/upload
 - **Upload**: Files are sent as `multipart/form-data` with the key `file`.
 - **Auth**: If `VITE_API_TOKEN` is set, all requests will include an `Authorization: Bearer <token>` header.
 
+> **⚠️ Security note:** `VITE_*` variables are compiled into the client-side JavaScript bundle — **anything you put in `.env`, including `VITE_API_TOKEN`, is visible to anyone who can load the app.** Treat it as public. Use short-lived/scoped tokens, or proxy requests through a server-side backend if the token must stay secret. Never commit real `.env` files (`.env` is gitignored; use `.env.example` as the template).
+
 ## Building and Running
 
 The project works with `npm` **or** `bun` for package management.
 
-### Docker: Nginx-served production image
+### Docker: multi-stage build (Vite build + Nginx serve)
 
-The `Dockerfile` builds the app and serves `/dist` via Nginx (SPA fallback
-included in `nginx.conf`). Vite env vars bake in at build time:
+The `Dockerfile` is a multi-stage image: Stage 1 builds the static site
+with Node 20 (`npm ci` + `npm run build`), Stage 2 serves `dist/` with
+Nginx on container port `80` (SPA fallback via `try_files ... /index.html`
+in `nginx.conf`).
+
+Run with Compose (PowerShell):
+
+```powershell
+docker compose up --build
+# app available at http://localhost:8026
+```
+
+Or with plain Docker:
 
 ```powershell
 docker build -t voltchat .
-docker run -p 8026:80 voltchat
-# or: docker compose up --build  # http://localhost:8026
+docker run --rm -p 8026:80 voltchat
 ```
 
-To point at a backend, rebuild with `--build-arg VITE_WEBHOOK_URL=...`
-or set it in `.env` before building. From inside a container use
-`http://host.docker.internal:9732/chat` for a host-local backend.
+Notes:
+- Vite env vars (`VITE_*` from `.env`) are baked in at build time, so set
+  them before building. `index.html` ships static branding defaults, so a
+  build with no `.env` still renders correctly (see `src/lib/branding.ts`).
+- `docker-compose.override.yml` is gitignored for local tweaks (e.g. mapping
+  a different host port). The base `docker-compose.yml` already publishes
+  `8026:80` so a fresh clone works without an override file.
+- To point at a backend, rebuild with `--build-arg VITE_WEBHOOK_URL=...`
+  or set it in `.env` before building. From inside a container use
+  `http://host.docker.internal:9732/chat` for a host-local backend.
 
 ### Setup Locally:
 

@@ -3,22 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>%VITE_APP_NAME%</title>
-    <meta name="description" content="%VITE_APP_DESCRIPTION%" />
-    <meta name="author" content="%VITE_APP_NAME%" />
+    <!-- Static defaults; overridden at startup from VITE_* vars (see src/lib/branding.ts) -->
+    <title>VoltChat</title>
+    <meta name="description" content="A high-performance chat interface." />
+    <meta name="author" content="VoltChat Team" />
     <meta name="keywords" content="AI, chat, developer, template" />
 
-    <meta property="og:title" content="%VITE_APP_NAME%" />
-    <meta property="og:description" content="%VITE_APP_DESCRIPTION%" />
+    <meta property="og:title" content="VoltChat" />
+    <meta property="og:description" content="A high-performance chat interface." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="%VITE_APP_LOGO_URL%" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="%VITE_APP_NAME%" />
-    <meta name="twitter:description" content="%VITE_APP_DESCRIPTION%" />
-    <meta name="twitter:image" content="%VITE_APP_LOGO_URL%" />
-    
-    <link rel="icon" type="image/svg+xml" href="%VITE_FAVICON_URL%" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   </head>
@@ -28,4 +23,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

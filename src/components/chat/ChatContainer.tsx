@@ -81,7 +81,7 @@ export function ChatContainer() {
           />
 
           {/* Messages area */}
-          <main ref={scrollContainerRef} className={cn("flex-1 overflow-y-auto", messages.length === 0 && "flex items-center justify-center pb-64")}>
+          <main ref={scrollContainerRef} className={cn("flex-1 overflow-y-auto", messages.length === 0 && "flex items-center justify-center")}>
             {messages.length === 0 ? (
               <div className="w-full max-w-3xl flex flex-col items-center">
                 <EmptyState 

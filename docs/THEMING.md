@@ -13,11 +13,12 @@ There are no hardcoded product names in the UI shell.
 | `VITE_FAVICON_URL`     | `index.html` icon link                         |
 | `VITE_DEFAULT_THEME`   | `src/hooks/useTheme.ts` initial theme          |
 
-`index.html` uses Vite `%VITE_*%` placeholders, so branding applies at build time.
-Build-time fallbacks for those placeholders live in `vite.config.ts`
-(`HTML_ENV_DEFAULTS`) so `npm run build` works even with no `.env` — any key
-defined in `.env` overrides the fallback. Runtime overrides after build are not
-supported — rebuild to rebrand.
+`index.html` ships static branding defaults, so a build with no `.env` still
+renders correctly. At startup `src/lib/branding.ts` (imported once in
+`src/main.tsx`) overrides the page title, meta description, OG tags and favicon
+from the `VITE_APP_*` env values. The component layer reads the same values via
+`src/config.ts` — keep both defaults in sync when renaming the app. Runtime
+overrides after a production build are not supported — rebuild to rebrand.
 
 ## Themes
 

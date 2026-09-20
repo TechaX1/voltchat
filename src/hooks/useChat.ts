@@ -194,13 +194,6 @@ export function useChat() {
           return;
         }
 
-        console.log(`[useChat] Sending message to: ${webhookConfig.url}`, {
-          message: content.trim(),
-          sessionId,
-          timestamp: new Date().toISOString(),
-          attachments
-        });
-
         const response = await postChat(
           buildChatPayload(content, sessionId, attachments || []),
           webhookConfig.url,
@@ -211,7 +204,6 @@ export function useChat() {
 
         if (contentType.includes('application/json')) {
           const data = await response.json();
-          console.log('[useChat] Received data:', data);
           const responseContent = extractJsonContent(data);
 
           if (isStreamingEnabled) {
@@ -312,6 +304,7 @@ export function useChat() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       return {
         success: true,
+        simulated: true,
         data: {
           status: 'success',
           file_id: `file_mock_${generateId()}`,
