@@ -33,10 +33,11 @@ export interface WebhookConfig {
   isExternal?: boolean;
 }
 
-export interface ChatState {
-  messages: Message[];
-  isLoading: boolean;
-  webhookConfig: WebhookConfig;
+export interface UploadResponseData {
+  status?: string;
+  file_id?: string;
+  fileId?: string;
+  [key: string]: unknown;
 }
 
 export interface UploadResult {
@@ -45,5 +46,11 @@ export interface UploadResult {
   simulated?: boolean;
   /** Error details when a real upload attempt failed and the simulated fallback was used instead. */
   message?: string;
-  data?: { status?: string; file_id?: string };
+  data?: UploadResponseData;
+}
+
+export interface ChatState {
+  messages: Message[];
+  isLoading: boolean;
+  webhookConfig: WebhookConfig;
 }

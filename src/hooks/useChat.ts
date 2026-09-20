@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, WebhookConfig, Attachment, UploadResult } from '@/types/chat';
+import { Message, WebhookConfig, Attachment, UploadResponseData, UploadResult } from '@/types/chat';
 import { APP_NAME, APP_DESCRIPTION, APP_LOGO_URL } from '@/lib/branding';
 
 const WEBHOOK_STORAGE_KEY = 'voltchat-webhook-url';
@@ -347,7 +347,7 @@ export function useChat() {
         throw new Error(`Upload failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as UploadResponseData;
       return { success: true, data };
     } catch (error) {
       // Documented fallback: keep the attachment flow usable when the upload
